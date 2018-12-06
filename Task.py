@@ -4,7 +4,7 @@ numberOfProperties = 8
 
 
 class Task:
-    """Representation of a Task."""
+    """Representation of a Task as class."""
     numberOfProperties = 8
 
     def __init__(self, priority=0, deadline=0, quota='0', pkg='0', arg=0, period=0, numberOfJobs=0, offset=0):
