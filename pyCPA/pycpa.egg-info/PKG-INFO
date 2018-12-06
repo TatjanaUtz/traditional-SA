@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: pycpa
+Version: 1.2
+Summary: pyCPA - a python implementation of compositional performance analysis
+Home-page: https://bitbucket.org/pycpa/pycpa
+Author: Jonas Diemer, Philip Axer, Daniel Thiele, Johannes Schlatow
+Author-email: {axer,diemer,thiele,schlatow}@ida.ing.tu-bs.de
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
+Provides-Extra: topology_plot
+Provides-Extra: plot
+Provides-Extra: doc
+Provides-Extra: xls
+Provides-Extra: gantt_charts
+Provides-Extra: trace

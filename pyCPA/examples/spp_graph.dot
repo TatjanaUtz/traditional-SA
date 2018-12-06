@@ -1,0 +1,37 @@
+strict digraph {
+graph[directed="true",
+compound="true",
+rankdir="LR",
+remincross="true",
+ordering="out"];
+subgraph "cluster_R1"{
+  "R1"[color="#aaaacc",
+shape="none"];
+
+  "T11"[label="T11"];
+
+  "T12"[label="T12"];
+
+}
+subgraph "cluster_R2"{
+  "R2"[color="#aaaacc",
+shape="none"];
+
+  "T22"[label="T22"];
+
+  "T21"[label="T21"];
+
+}
+"T11" -> "T21"[len="10",
+constraint="True"];
+"P=30 J=5 d=0"[len="100",
+style="dashed"];
+"P=30 J=5 d=0" -> "T11"[constraint="True",
+style="dashed"];
+"T12" -> "T22"[len="10",
+constraint="True"];
+"P=15 J=6 d=0"[len="100",
+style="dashed"];
+"P=15 J=6 d=0" -> "T12"[constraint="True",
+style="dashed"];
+}

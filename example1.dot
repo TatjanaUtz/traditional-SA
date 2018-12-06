@@ -1,0 +1,30 @@
+strict digraph {
+graph[directed="true",
+compound="true",
+rankdir="LR",
+remincross="true",
+ordering="out"];
+subgraph "cluster_CPU1"{
+  "CPU1"[color="#aaaacc",
+shape="none"];
+
+  "T1"[label="T1"];
+
+  "T2"[label="T2"];
+
+  "T3"[label="T3"];
+
+}
+"P=10000 J=0 d=0"[len="100",
+style="dashed"];
+"P=10000 J=0 d=0" -> "T1"[constraint="True",
+style="dashed"];
+"P=10000 J=0 d=0"[len="100",
+style="dashed"];
+"P=10000 J=0 d=0" -> "T2"[constraint="True",
+style="dashed"];
+"P=10000 J=0 d=0"[len="100",
+style="dashed"];
+"P=10000 J=0 d=0" -> "T3"[constraint="True",
+style="dashed"];
+}
