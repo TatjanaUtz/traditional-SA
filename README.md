@@ -1,2 +1,7 @@
 # traditional-SA
-traditional schedulability analysis via simulation, utilization test, response time analysis or workload test for FP scheduler
+Traditional schedulability analysis (SA) for fixed priority (FP) scheduler.
+Possible analysis tools are:
+- simulation
+- utilization test
+- response time analysis (RTA)
+- workload test
