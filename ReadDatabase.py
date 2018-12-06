@@ -66,15 +66,34 @@ def readTable(db_connection, table_name):
     return data
 
 
+def getExecutionTimes():
+    """Get the execution times.
+
+    Return values:
+    dictionary with execution times depending on (PKG, Arg)
+    """
+    logging.debug("getExecutionTimes(): executen times will be extracted")
+    db_connection = openDb(db_name, db_path)  # Open database
+    data = readTable(db_connection, "ExecutionTimes")
+    dict_exeTimes = {}  # Dictionary with execution times, key = (PKG, Arg), Value = C
+    for i in range(len(data)):
+        pkg = data[i][0]    # PKG
+        arg = data[i][1]    # Arg
+        c = data[i][2]      # Execution Time C
+        dict_exeTimes[(pkg, arg)] = c
+    closeDb(db_connection)  # Close database
+    return dict_exeTimes
+
+
 if __name__ == "__main__":
     # Configure logging: format should be "LEVELNAME: Message",
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-    db_connection = openDb(db_name, db_path)  # Open the database
+    # Open the database
+    db_connection = openDb(db_name, db_path)
 
-    data = readTable(db_connection, table_name)
-    for i in range(len(data)):
-        print(data[i])
+    getExecutionTimes()
 
+    # Close the database
     closeDb(db_connection)
