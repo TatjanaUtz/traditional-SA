@@ -23,8 +23,10 @@ def utilization_test(taskset):
     for i in range(len(taskset)):
         utilization += taskset[i][0] / taskset[i][1]
     if utilization <= 1:
+        logging.debug("utilization_test(): taskset is schedulable!")
         return True
     else:
+        logging.debug("utilization_test(): taskset is NOT scheudlable!")
         return False
 
 
