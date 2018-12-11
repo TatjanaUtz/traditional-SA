@@ -1,14 +1,17 @@
-""" Model of a task. """
-
-numberOfProperties = 8
+"""Representation of a task."""
 
 
 class Task:
-    """Representation of a Task."""
-    numberOfProperties = 8
+    """Representation of a Task.
 
-    def __init__(self, priority=0, deadline=0, quota='0', pkg='0', arg=0, period=0, numberOfJobs=0, offset=0):
-        """Constructor of class Task. Initialize all variables."""
+    A task is defined by the attributes priority, deadline, quota, pkg,
+    arg, period, numberOfJobs, offset and execution time.
+    """
+
+    # Constructor
+    def __init__(self, priority=None, deadline=None, quota='10M', pkg=None, arg=None, period=None,
+                 numberOfJobs=1, offset=None, executionTime=None):
+        """Constructor: initialize the attributes."""
         self.priority = priority
         self.deadline = deadline
         self.quota = quota
@@ -17,34 +20,20 @@ class Task:
         self.period = period
         self.numberOfJobs = numberOfJobs
         self.offset = offset
+        self.executionTime = executionTime
 
     # String representation
     def __str__(self):
-        """String representation of a Task."""
-        s = [self.priority, self.deadline, self.quota, self.pkg, self.arg, self.period, self.numberOfJobs, self.offset]
-        return str(s)
-
-    # Getter
-    def getPriority(self):
-        return self.priority
-
-    def getDeadline(self):
-        return self.deadline
-
-    def getQuota(self):
-        return self.quota
-
-    def getPkg(self):
-        return self.pkg
-
-    def getArg(self):
-        return self.arg
-
-    def getPeriod(self):
-        return self.period
-
-    def getNumberOfJobs(self):
-        return self.getNumberOfJobs
-
-    def getOffset(self):
-        return self.offset
+        """Represent task as string."""
+        dict = {
+            "Priority": self.priority,
+            "Deadline": self.deadline,
+            "Quota": self.quota,
+            "PKG": self.pkg,
+            "Arg": self.arg,
+            "Period": self.period,
+            "Number of Jobs": self.numberOfJobs,
+            "Offset": self.offset,
+            "Execution Time": self.executionTime
+        }
+        return str(dict)
