@@ -1,13 +1,13 @@
 """Representation of a task."""
 
 # Variables
-number_of_properties = 8        # Number of the properties of a task in a dataset table
+number_of_properties = 8
 
 
 class Task:
     """Representation of a Task.
 
-    A task is currently defined by 9 properties: priority, deadline, quota, pkg,
+    A task is defined by the attributes priority, deadline, quota, pkg,
     arg, period, numberOfJobs, offset and execution time.
     """
 
