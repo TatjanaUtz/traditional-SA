@@ -6,7 +6,7 @@ U = sum(C_i / T_i) <= 1 (neccessary condition)
 
 import logging
 
-import utils_database as db
+import Database as db
 from Task import Task
 from TaskSet import TaskSet
 
