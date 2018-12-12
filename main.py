@@ -19,7 +19,7 @@ def main():
     tp, fp, tn, fn, total = 0, 0, 0, 0, 0
 
     # Name of table
-    table_name = "Dataset1"
+    table_name = "Dataset3"
 
     # Get number of columns of table 'Dataset1'
     db_cursor.execute("PRAGMA table_info('" + table_name + "')")
