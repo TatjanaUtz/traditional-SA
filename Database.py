@@ -79,6 +79,10 @@ def get_taskset(dataset=_current_dataset, taskset=_current_taskset):
     taskset -- index of the taskset
     """
 
+    if isinstance(dataset, str):    # table-name instead of index is given
+        # Convert table-name into index: index = last number of table-name - 1
+        dataset = int(re.findall(r'\d+', dataset)[-1]) - 1
+
     # Get a row (= task-set) from the database
     open_DB()
     sql = "SELECT * FROM " + datasets[dataset]
