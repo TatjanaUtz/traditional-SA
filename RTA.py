@@ -1,4 +1,6 @@
-"""RTA Modul"""
+"""RTA Modul
+Response Time Analysis Methods.
+"""
 import logging
 import math
 
@@ -54,7 +56,7 @@ def RTA(new_task, rq_buf):
         logging.debug("num_elements == 0, Task-Set is schedulable!")
         return True
 
-    ''' RTA-Algorithm
+    ''' RTA.py-Algorithm
     We assume that the existing Task-Set is schedulable without the new task. Therefore the
     response time has to e computed for the new task and all tasks having a smaller priority then
     the new task and for the new task. The tasks in the rq_buf are assumed to be sorted by
@@ -90,7 +92,7 @@ def RTA(new_task, rq_buf):
                     logging.debug("Task-Set is not schedulable!")
                     return False
             _curr_task_idx += 1
-    logging.debug("All Task-Sets passed the RTA Algorithm -> Task-Set schedulable!")
+    logging.debug("All Task-Sets passed the RTA.py Algorithm -> Task-Set schedulable!")
     return True
 
 def test_RTA(dataset):
@@ -148,7 +150,7 @@ def test_RTA(dataset):
         total += 1
 
     # Print results
-    print("---------- RESULTS OF RTA FOR " + table_name + " ----------")
+    print("---------- RESULTS OF RTA.py FOR " + table_name + " ----------")
     print("Correct: {0:d} / {1:d} -> {2:.0f}%".format(tp + tn, total, (tp + tn) * 100 / total))
     print("Incorrect: {0:d} / {1:d} -> {2:.0f}%".format(fp + fn, total, (fp + fn) * 100 / total))
     print("True positive (tp) = {0:d}".format(tp))
@@ -167,9 +169,9 @@ if __name__ == "__main__":
 
     dataset = "Dataset3"
 
-    # Test RTA
-    test_RTA("Dataset1")
+    # Test RTA.py
+    '''test_RTA("Dataset1")
     test_RTA("Dataset2")
     test_RTA("Dataset3")
     test_RTA("Dataset4")
-    test_RTA("Dataset5")
+    test_RTA("Dataset5")'''

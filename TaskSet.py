@@ -57,4 +57,4 @@ class TaskSet:
 
         The taskset is sorted according to the task priorities in increasing order.
         """
-        self._tasks.sort(key=operator.attrgetter('priority'), reverse=True)
+        self._tasks.sort(key=operator.attrgetter('priority'))
