@@ -75,15 +75,20 @@ def get_taskset(dataset=_current_dataset, taskset=_current_taskset):
     """Get a task-set.
 
     If no arguments are given, the _current_dataset and _current_taskset is returned.
-    dataset -- index of the dataset
+    dataset -- index or name of the dataset
     taskset -- index of the taskset
+    Return value:
+    the task-set, None if no more task-set available, -1 if an error occured
     """
 
-    if isinstance(dataset, str):    # table-name instead of index is given
-        # Convert table-name into index: index = last number of table-name - 1
-        dataset = int(re.findall(r'\d+', dataset)[-1]) - 1
+    if isinstance(dataset, str):  # table-name instead of index is given
+        if dataset in datasets:  # Valid dataset given
+            dataset = datasets.index(dataset)
+        else:  # Invalid dataset given
+            logging.error("Databse/get_taskset(): No valid dataset given!")
+            return -1
 
-    # Get a row (= task-set) from the database
+    # Get all rows (= task-sets) from the dataset
     open_DB()
     sql = "SELECT * FROM " + datasets[dataset]
     _db_cursor.execute(sql)
@@ -137,3 +142,98 @@ def _get_executionTime(pkg=None):
         execution_time = _db_cursor.fetchall()
         close_DB()
         return execution_time[0][0]
+
+
+# Get number of task-sets in dataset
+def get_number_of_tasksets(dataset=_current_dataset):
+    """Get the number of task-sets in a dataset.
+
+    If no argument is given, the _current_dataset is used.
+    dataset -- index or name of the dataset
+    Return value:
+    number of task-sets
+    -1 -- error occurred
+    """
+
+    # table-name instead of index is given
+    if isinstance(dataset, str):
+        if dataset in datasets:  # Valid dataset given
+            dataset = datasets.index(dataset)
+        else:  # Invalid dataset given
+            logging.error("Databse/get_taskset(): No valid dataset given!")
+            return -1
+
+    # Get all rows (= task-sets) from the dataset
+    open_DB()
+    sql = "SELECT * FROM " + datasets[dataset]
+    _db_cursor.execute(sql)
+    rows = _db_cursor.fetchall()
+    close_DB()
+
+    # Return number of task-sets in the dataset
+    return len(rows)
+
+
+# Get dataset
+def get_dataset(dataset):
+    """Get a complete dataset.
+
+    dataset - index or name of the dataset
+    Return value:
+    list of TaskSets representing the dataset
+    """
+    # table-name instead of index is given
+    if isinstance(dataset, str):
+        if dataset in datasets:  # Valid dataset given
+            dataset = datasets.index(dataset)
+        else:  # Invalid dataset given
+            logging.error("Databse/get_taskset(): No valid dataset given!")
+            return -1
+
+    # Get all rows (= task-sets) from the dataset
+    open_DB()
+    sql = "SELECT * FROM " + datasets[dataset]
+    _db_cursor.execute(sql)
+    rows = _db_cursor.fetchall()
+    close_DB()
+
+    # Get number of tasks within the taskset (= last number of dataset-name)
+    number_of_tasks = int(re.findall(r'\d+', datasets[dataset])[-1])
+
+    # Create empty list
+    taskset_list = []
+
+    for j in range(len(rows)):  # Iterate over all rows
+        row = rows[j]
+
+        # Create empty task-set
+        taskset = TaskSet(id=row[0], exit_value=row[-1])
+
+        # Iterate over all tasks in task-set
+        for i in range(number_of_tasks):
+            # Extract task properties
+            priority = row[1 + i * Task.number_of_properties]
+            deadline = row[2 + i * Task.number_of_properties]
+            quota = row[3 + i * Task.number_of_properties]
+            pkg = row[4 + i * Task.number_of_properties]
+            arg = row[5 + i * Task.number_of_properties]
+            period = row[6 + i * Task.number_of_properties]
+            number_of_jobs = row[7 + i * Task.number_of_properties]
+            offset = row[8 + i * Task.number_of_properties]
+
+            # Get execution time depending on pkg
+            execution_time = _get_executionTime(pkg, arg)
+
+            # Create new task
+            new_task = Task.Task(priority, deadline, quota, pkg, arg, period, number_of_jobs,
+                                 offset,
+                                 execution_time)
+
+            # Add new task to task-set
+            taskset.addTask(new_task)
+
+        # Return the created task-set
+        taskset_list.append(taskset)
+
+    # Return list of task-sets
+    return taskset_list
