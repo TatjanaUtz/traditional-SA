@@ -92,53 +92,61 @@ def get_taskset(dataset=_current_dataset, taskset=_current_taskset):
     open_DB()
     sql = "SELECT * FROM " + datasets[dataset]
     _db_cursor.execute(sql)
-    row = _db_cursor.fetchall()[taskset]
+    rows = _db_cursor.fetchall()
     close_DB()
 
-    # Get number of tasks within the taskset (= last number of dataset-name)
-    number_of_tasks = int(re.findall(r'\d+', datasets[dataset])[-1])
+    if taskset <= (len(rows) - 1):  # At least one task-set is available
+        row = rows[taskset]
 
-    # Create empty task-set
-    taskset = TaskSet(id=row[0], exit_value=row[-1])
+        # Get number of tasks within the taskset (= last number of dataset-name)
+        number_of_tasks = int(re.findall(r'\d+', datasets[dataset])[-1])
 
-    # Iterate over all tasks in task-set
-    for i in range(number_of_tasks):
-        # Extract task properties
-        priority = row[1 + i * Task.number_of_properties]
-        deadline = row[2 + i * Task.number_of_properties]
-        quota = row[3 + i * Task.number_of_properties]
-        pkg = row[4 + i * Task.number_of_properties]
-        arg = row[5 + i * Task.number_of_properties]
-        period = row[6 + i * Task.number_of_properties]
-        number_of_jobs = row[7 + i * Task.number_of_properties]
-        offset = row[8 + i * Task.number_of_properties]
+        # Create empty task-set
+        taskset = TaskSet(id=row[0], exit_value=row[-1])
 
-        # Get execution time depending on pkg
-        execution_time = _get_executionTime(pkg)
+        # Iterate over all tasks in task-set
+        for i in range(number_of_tasks):
+            # Extract task properties
+            priority = row[1 + i * Task.number_of_properties]
+            deadline = row[2 + i * Task.number_of_properties]
+            quota = row[3 + i * Task.number_of_properties]
+            pkg = row[4 + i * Task.number_of_properties]
+            arg = row[5 + i * Task.number_of_properties]
+            period = row[6 + i * Task.number_of_properties]
+            number_of_jobs = row[7 + i * Task.number_of_properties]
+            offset = row[8 + i * Task.number_of_properties]
 
-        # Create new task
-        new_task = Task.Task(priority, deadline, quota, pkg, arg, period, number_of_jobs, offset,
-                             execution_time)
+            # Get execution time depending on pkg
+            execution_time = _get_executionTime(pkg, arg)
 
-        # Add new task to task-set
-        taskset.addTask(new_task)
+            # Create new task
+            new_task = Task.Task(priority, deadline, quota, pkg, arg, period, number_of_jobs,
+                                 offset,
+                                 execution_time)
 
-    # Return the created task-set
-    return taskset
+            # Add new task to task-set
+            taskset.addTask(new_task)
+
+        # Return the created task-set
+        return taskset
+
+    else:  # No more task-set available
+        logging.error("Database/get_taskset(): No further task-set available!")
+        return None
 
 
 # Get execution time of a task
-def _get_executionTime(pkg=None):
+def _get_executionTime(pkg=None, arg=None):
     """Get the execution time of a task defined by pkg.
 
     If no pkg is given, 0 is returned.
     """
-    if pkg is None:  # no argument given
+    if pkg is None or arg is None:  # no argument given
         return 0
     else:
         open_DB()
-        sql = "SELECT ExecutionTime FROM " + executionTimes + " WHERE PKG=?"
-        _db_cursor.execute(sql, (pkg,))
+        sql = "SELECT ExecutionTime FROM " + executionTimes + " WHERE PKG=? AND Arg=?"
+        _db_cursor.execute(sql, (pkg, arg))
         execution_time = _db_cursor.fetchall()
         close_DB()
         return execution_time[0][0]
