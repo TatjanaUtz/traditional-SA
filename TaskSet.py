@@ -13,12 +13,12 @@ class TaskSet:
     def __init__(self, id=None, tasks=[], exit_value=None):
         """Constructor: initialize a taskset from a list of tasks."""
         self.id = id
-        self._tasks = []        # Create empty taskset
+        self._tasks = []  # Create empty taskset
         self._task_counter = 0  # Set task counter to 0, as taskset is empty
-        for t in tasks:         # Iterate over all tasks
-            self._tasks.append(t)       # Add task to taskset
-            self._task_counter += 1     # Raise task counter
-        self.sort()             # Sort tasks according to increasing priorities
+        for t in tasks:  # Iterate over all tasks
+            self._tasks.append(t)  # Add task to taskset
+            self._task_counter += 1  # Raise task counter
+        self.sort()  # Sort tasks according to increasing priorities
         self.exit_value = exit_value
 
     # String representation
@@ -32,9 +32,9 @@ class TaskSet:
     # Add a task
     def addTask(self, task):
         """Add a new task to the taskset."""
-        self._tasks.append(task)        # Add task to taskset
-        self._task_counter += 1         # Raise task counter
-        self.sort()                     # Sort tasks according to increasing priorities
+        self._tasks.append(task)  # Add task to taskset
+        self._task_counter += 1  # Raise task counter
+        self.sort()  # Sort tasks according to increasing priorities
 
     # Length of taskset
     def __len__(self):

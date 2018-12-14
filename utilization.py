@@ -93,24 +93,3 @@ if __name__ == "__main__":
 
     # Test basic_utilization_test
     test_dataset("Dataset5")
-
-    # Test utilization_test_edf
-    '''test_utilization_test_edf("Dataset1")
-    test_utilization_test_edf("Dataset2")
-    test_utilization_test_edf("Dataset3")
-    test_utilization_test_edf("Dataset4")
-    test_utilization_test_edf("Dataset5")'''
-
-    # Test utilization_test_rm
-    '''test_utilization_test_rm("Dataset1")
-    test_utilization_test_rm("Dataset2")
-    test_utilization_test_rm("Dataset3")
-    test_utilization_test_rm("Dataset4")
-    test_utilization_test_rm("Dataset5")'''
-
-    # Test fp_sufficient_test
-    '''test_fp_sufficient_test("Dataset1")
-    test_fp_sufficient_test("Dataset2")
-    test_fp_sufficient_test("Dataset3")
-    test_fp_sufficient_test("Dataset4")
-    test_fp_sufficient_test("Dataset5")'''

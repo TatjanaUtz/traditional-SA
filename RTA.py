@@ -143,4 +143,5 @@ if __name__ == "__main__":
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
+    # Test RTA
     test_dataset("Dataset5")
