@@ -30,7 +30,7 @@ class Task:
     # String representation
     def __str__(self):
         """Represent task as string."""
-        s = "[id=" + str(self.id) + " prio=" + str(self.priority) + " " + str(self.pkg) + "(" + str(
+        s = "(id=" + str(self.id) + " prio=" + str(self.priority) + " " + str(self.pkg) + "(" + str(
             self.arg) + ") D=" + str(self.deadline) + " T=" + str(self.period) + " " + str(
-            self.number_of_jobs) + "x C=" + str(self.execution_time) + "]"
+            self.number_of_jobs) + "x C=" + str(self.execution_time) + ")"
         return s

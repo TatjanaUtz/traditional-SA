@@ -3,7 +3,7 @@
 import logging
 
 import Database as db
-from TaskSet import TaskSet
+from Taskset import TaskSet
 
 # Global variables
 utilization_tests = ["basic_utilization_test", "RM_utilization_test", "HB_utilization_test"]

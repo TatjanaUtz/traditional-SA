@@ -13,7 +13,7 @@ import re
 import sqlite3
 
 import Task
-from TaskSet import TaskSet
+from Taskset import TaskSet
 
 # Attributes of database
 dir = os.path.dirname(os.path.abspath(__file__))
