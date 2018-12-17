@@ -1,42 +1,36 @@
-"""Representation of a task."""
+"""Representation of a task.
 
-# Variables
-number_of_properties = 8
+Currently only the following attributes are integrated:
+    id -- id of the task, corresponds to column 'Task_ID'
+    priority -- priority of task, 1 is the highest priority
+    pkg -- name of the task, corresponds to column 'PKG'
+    arg -- argument of task, has influence on the execution time
+    deadline -- deadline of the task
+    period -- period of the task
+    number_of_jobs -- number of jobs, defines how often the task is executed
+    execution_time -- time needed to execute the task
+"""
 
 
 class Task:
-    """Representation of a Task.
-
-    A task is defined by the attributes priority, deadline, quota, pkg,
-    arg, period, numberOfJobs, offset and execution time.
-    """
 
     # Constructor
-    def __init__(self, priority=None, deadline=None, quota='10M', pkg=None, arg=None, period=None,
-                 number_of_jobs=1, offset=None, execution_time=None):
+    def __init__(self, id=-1, priority=-1, pkg=None, arg=None, deadline=-1, period=-1,
+                 number_of_jobs=-1, execution_time=-1):
         """Constructor: initialize the attributes."""
+        self.id = id
         self.priority = priority
-        self.deadline = deadline
-        self.quota = quota
         self.pkg = pkg
         self.arg = arg
+        self.deadline = deadline
         self.period = period
         self.number_of_jobs = number_of_jobs
-        self.offset = offset
         self.execution_time = execution_time
 
     # String representation
     def __str__(self):
         """Represent task as string."""
-        dict = {
-            "Priority": self.priority,
-            "Deadline": self.deadline,
-            "Quota": self.quota,
-            "PKG": self.pkg,
-            "Arg": self.arg,
-            "Period": self.period,
-            "Number of Jobs": self.number_of_jobs,
-            "Offset": self.offset,
-            "Execution Time": self.execution_time
-        }
-        return str(dict)
+        s = "[id=" + str(self.id) + " prio=" + str(self.priority) + " " + str(self.pkg) + "(" + str(
+            self.arg) + ") D=" + str(self.deadline) + " T=" + str(self.period) + " " + str(
+            self.number_of_jobs) + "x C=" + str(self.execution_time) + "]"
+        return s
