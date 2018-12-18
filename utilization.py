@@ -1,9 +1,10 @@
 """Utilization-based Schedulability Tests."""
 
 import logging
+import time
 
-import Database as db
-from Taskset import TaskSet
+import new_database as db
+from Taskset import Taskset
 
 # Global variables
 utilization_tests = ["basic_utilization_test", "RM_utilization_test", "HB_utilization_test"]
@@ -20,7 +21,7 @@ def basic_utilization_test(taskset):
     -1 -- error occurred
     """
     # Check input argument
-    if taskset is None or not isinstance(taskset, TaskSet):
+    if taskset is None or not isinstance(taskset, Taskset):
         logging.error(
             "utilization/basic_utilization_test(): wrong input argument or no task-set given!")
         return -1
@@ -58,7 +59,7 @@ def RM_utilization_test(taskset):
     -1 -- error occurred
     """
     # Check input argument
-    if taskset is None or not isinstance(taskset, TaskSet):
+    if taskset is None or not isinstance(taskset, Taskset):
         logging.error(
             "utilization/RM_utilization_test(): wrong input argument or no task-set given!")
         return -1
@@ -96,7 +97,7 @@ def HB_utilization_test(taskset):
     -1 -- error occurred
     """
     # Check input argument
-    if taskset is None or not isinstance(taskset, TaskSet):
+    if taskset is None or not isinstance(taskset, Taskset):
         logging.error(
             "utilization/basic_utilization_test(): wrong input argument or no task-set given!")
         return -1
@@ -118,7 +119,7 @@ def HB_utilization_test(taskset):
         return False
 
 
-def test_dataset(dataset, test_name):
+def test_dataset(taskset_list, test_name):
     """Test a hole dataset.
 
     Keyword arguments:
@@ -132,7 +133,7 @@ def test_dataset(dataset, test_name):
         return
 
     # Get the dataset from database
-    taskset_list = db.get_dataset(dataset)
+    # taskset_list = db.get_dataset(dataset)
 
     # Get number of task-sets in the dataset
     number_of_tasksets = len(taskset_list)
@@ -142,27 +143,27 @@ def test_dataset(dataset, test_name):
 
     for i in range(number_of_tasksets):  # Iterate over all task-sets
         taskset = taskset_list[i]
-        if test_name == "basic_utiization_test":
+        if test_name == "basic_utilization_test":
             schedulability = basic_utilization_test(taskset)
         elif test_name == "RM_utilization_test":
             schedulability = RM_utilization_test(taskset)
         elif test_name == "HB_utilization_test":
             schedulability = HB_utilization_test(taskset)
 
-        exit_value = taskset.exit_value
+        exit_value = taskset.result
 
         # Analyse test
         if schedulability is True and exit_value == 1:  # True positives
             tp += 1
-        elif schedulability is True and exit_value == -1:  # False positives
+        elif schedulability is True and exit_value == 0:  # False positives
             fp += 1
         elif schedulability is False and exit_value == 1:  # False negatives
             fn += 1
-        elif schedulability is False and exit_value == -1:  # True negatives
+        elif schedulability is False and exit_value == 0:  # True negatives
             tn += 1
 
     # Print results
-    s = "---------- RESULTS OF " + test_name + " FOR " + dataset + " ----------"
+    s = "---------- RESULTS OF " + test_name + " ----------"
     print(s)
     print("Correct: {0:d} / {1:d} -> {2:.0f}%".format(tp + tn, number_of_tasksets,
                                                       (tp + tn) * 100 / number_of_tasksets))
@@ -180,8 +181,10 @@ if __name__ == "__main__":
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
-    # Test basic_utilization_test
-    # test_dataset("Dataset1", "basic_utilization_test")
-
-    # Test RM_utilization_test
-    test_dataset("Dataset1", "HB_utilization_test")
+    start_time = time.time()
+    dataset = db.get_dataset()
+    end_time = time.time()
+    print("Time elapsed = ", end_time - start_time)
+    test_dataset(dataset, "basic_utilization_test")
+    test_dataset(dataset, "RM_utilization_test")
+    test_dataset(dataset, "HB_utilization_test")

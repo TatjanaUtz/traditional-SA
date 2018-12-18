@@ -2,7 +2,7 @@
 import logging  # for logging
 import os
 import sqlite3  # for working with the database
-import time  # for measuring the processing time
+import time
 
 from Task import Task  # for creating tasks
 from Taskset import Taskset  # for creating task-sets
@@ -96,7 +96,7 @@ def get_dataset():
 
     Reads all task-sets from the database.
     Return values:
-        list with task-sets
+        list with task-sets as Taskset-Objects
         None -- dataset is empty
         -1 -- an error occurred
     """
@@ -119,7 +119,7 @@ def get_dataset():
         return None
 
     # Limit number of rows
-    rows = rows[:1000]
+    #rows = rows[:100]
 
     # iterate over all rows
     for row in rows:
@@ -128,7 +128,7 @@ def get_dataset():
         task_ids = row[2:]
 
         # Create empty task-set
-        new_taskset = Taskset(id=id, result=result)
+        new_taskset = Taskset(id=id, result=result, tasks=[])
 
         # iterate over all tasks and create task-set
         for task_id in task_ids:
