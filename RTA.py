@@ -32,6 +32,7 @@ def RTA(taskset):
     for i in range(len(taskset)):  # Iterate over all tasks
         # Get response time of task
         response_time = _caluclate_response_time(taskset, taskset[i])
+        logging.debug("WCRT of Task " + str(i) + " = " + str(response_time))
 
         # Check schedulability of task
         if response_time == -1:  # an error occurred

@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     workload_test_arb_d(taskset, task3)
 
-    # scheduling_points = get_scheduling_points(taskset)
-    # print(scheduling_points)
-    # schedulability = workload_test(scheduling_points, taskset)
-    # print(schedulability)
+    scheduling_points = get_scheduling_points(taskset)
+    print(scheduling_points)
+    schedulability = workload_test_Lehoczky(scheduling_points, taskset)
+    print(schedulability)
