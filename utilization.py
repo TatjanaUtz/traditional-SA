@@ -14,7 +14,8 @@ def basic_utilization_test(taskset):
     """Utilization-based schedulability test.
 
     A task-set is schedulable, if the total utilization of a processor is less than or equal to 1: U <= 1.
-    The utilization of a task is the fraction of processing time and period: U_i = C_i / T_i.
+    The utilization of a task is the fraction of processing time and deadline or period:
+    U_i = C_i / min(D_i, T_i).
 
     Return value:
     True/False -- schedulabilty of task-set
@@ -30,8 +31,15 @@ def basic_utilization_test(taskset):
 
     # Iterate over all tasks
     for task in taskset:
-        # Calculate utilization-factor of task
-        task_utilization = task.execution_time / task.period
+        if task.deadline < task.period:  # deadline is smaller than period
+            # Calculate utilization-factor of task with deadline
+            task_utilization = task.execution_time / task.deadline
+        elif task.period < task.deadline:  # period is smaller than deadline
+            # Calculate utilization-factor of task with period
+            task_utilization = task.execution_time / task.period
+        else:  # deadline and period are equal
+            # Calculate utilization-factor of task
+            task_utilization = task.execution_time / task.period
 
         # Add utilization-factor of task to total utilization
         total_utilization += task_utilization
@@ -131,9 +139,6 @@ def test_dataset(taskset_list, test_name):
         # Invalid test name
         logging.error("utilization/test_dataset(): Invalid test name!")
         return
-
-    # Get the dataset from database
-    # taskset_list = db.get_dataset(dataset)
 
     # Get number of task-sets in the dataset
     number_of_tasksets = len(taskset_list)
