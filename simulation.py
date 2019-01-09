@@ -6,6 +6,86 @@ from functools import reduce
 from simso.configuration import Configuration
 from simso.core import Model
 
+from Taskset import Taskset
+
+
+def simulate(taskset):
+    """Simulation.
+
+    This method executes the simulation of a task-set. The simulation is run over the hyperperiod, which
+    is the least common mean of all task periods. The task-set is schedulable if all jobs of all tasks
+    in the hyperperiod can meet their deadlines.
+
+    Args:
+        taskset - the task-set that should be analyzed
+    Return:
+        True - the task-set is schedulable
+        False - the task-set is not schedulable
+        -1 - an error occured
+    """
+
+    # Check input argument
+    if taskset is None or not isinstance(taskset, Taskset):
+        logging.error("simulation.py/simulate(): Invalid input argument or no task-set given!")
+        return -1
+
+    # Manual configuration: the configuration class stores all the details about a system
+    configuration = Configuration()
+
+    # Get the periods of the tasks
+    periods = []
+    for task in taskset:
+        if task.period not in periods:
+            periods.append(task.period)
+
+    # Calculate the hyperperiod of the tasks
+    H = _lcm(periods)
+
+    # Define the length of simulation (= H)
+    configuration.duration = H * configuration.cycles_per_ms
+
+    # Add a property 'priority' to the task data fields
+    configuration.task_data_fields['priority'] = 'int'  # 'priority' is of type int
+
+    # Add the tasks to the list of tasks
+    i = 1
+    for task in taskset:
+        task_name = "T" + str(i)
+        activation_dates = _get_activation_dates(H, task.period, task.number_of_jobs)
+        configuration.add_task(name=task_name, identifier=i, task_type="Sporadic",
+                               period=task.period, activation_date=0, wcet=task.execution_time,
+                               deadline=task.deadline, list_activation_dates=activation_dates,
+                               data={'priority': task.priority})
+        i += 1
+
+    # Add a processor to the list of processors
+    configuration.add_processor(name="CPU1", identifier=1)
+
+    # Add a scheduler:
+    configuration.scheduler_info.filename = "fp_edf_scheduler.py"  # use a custom scheduler
+    # configuration.scheduler_info.clas="simso.schedulers.RM"   # use a scheduler embedded with SimSo
+
+    # Check the correctness of the configuration (without simulating it) before trying to run it
+    configuration.check_all()
+
+    # Init a model from the configuration
+    model = Model(configuration)
+
+    # Execute the simulation
+    model.run_model()
+
+    # Schedulability analysis: check for deadline miss of each job of every task
+    for task in model.results.tasks:
+        # print(task.name + ":")
+        for job in task.jobs:
+            if job.aborted:  # deadline miss
+                # print("{0:s} Deadline miss".format(job.name))
+                return False
+            # else:
+                # print("{0:s} ok".format(job.name))
+
+    return True
+
 
 def _get_activation_dates(H, T, number_of_jobs):
     """Determine all activation dates of a task.
@@ -27,72 +107,6 @@ def _get_activation_dates(H, T, number_of_jobs):
         current_activation_date += T
 
     return activation_dates
-
-
-def main():
-    # Manual configuration
-    # The configuration class stores all the details about a system.
-    configuration = Configuration()
-
-    # Add property "priority" of type int to tasks
-    configuration.task_data_fields['priority'] = 'int'
-
-    # Calculate the hyperperiod
-    H = _lcm([7000, 5000, 5000])
-
-    # Calculate activation dates
-    activation_dates = []
-    activation_dates.append(_get_activation_dates(H, 7000, 3))
-    activation_dates.append(_get_activation_dates(H, 5000, 7))
-    activation_dates.append(_get_activation_dates(H, 5000, 8))
-
-    # Add tasks to the list of tasks
-    configuration.add_task(name="T1", identifier=1, period=7000, wcet=1070, deadline=6500,
-                           list_activation_dates=activation_dates[0])
-    configuration.task_info_list[0].data['priority'] = int(2)
-    configuration.add_task(name="T2", identifier=2, period=5000, wcet=1070, deadline=4500,
-                           list_activation_dates=activation_dates[1])
-    configuration.task_info_list[1].data['priority'] = int(2)
-    configuration.add_task(name="T3", identifier=3, period=5000, wcet=1712, deadline=4500,
-                           list_activation_dates=activation_dates[2])
-    configuration.task_info_list[2].data['priority'] = int(2)
-
-    # Get the hyperperiod of the tasks: H = lcm(T1, ..., Tn)
-    # H = _lcm([x.period for x in configuration.task_info_list])
-
-    # Define length of simulation = H
-    # configuration.duration = 420 * configuration.cycles_per_ms
-    configuration.duration = H * configuration.cycles_per_ms
-
-    # Add a processor to the list of processors
-    configuration.add_processor(name="CPU 1", identifier=1)
-
-    # Add a scheduler
-    # configuration.scheduler_info.filename = "fp_edf_scheduler.py"  # use a custom scheduler
-    configuration.scheduler_info.clas = "simso.schedulers.FP"  # use a scheduler embedded with SimSo
-
-    # Check the correctness of the configuration (without simulating it) before trying to run it
-    configuration.check_all()
-
-    # Init a model from the configuration
-    model = Model(configuration)
-
-    # Execute the simulation
-    model.run_model()
-
-    # Print logs
-    # for log in model.logs:
-    #     print(log)
-
-    # Print the computation time of the jobs
-    for task in model.results.tasks:
-        print(task.name + ":")
-        for job in task.jobs:
-            print("{0:s} {1:.3f} ms".format(job.name, job.computation_time))
-
-    # Print number of preemptions per task
-    # for task in model.results.tasks.values():
-    #     print("{0:s} {1:d}".format(task.name, task.preemption_count))
 
 
 def _lcm(numbers):
@@ -140,7 +154,6 @@ if __name__ == "__main__":
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.ERROR)
 
-    main()
-    import simsogui
-
-    simsogui.run_gui()
+    # Open the SimSo GUI
+    # import simsogui
+    # simsogui.run_gui()
