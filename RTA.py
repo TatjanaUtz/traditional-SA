@@ -3,19 +3,13 @@ Response Time Analysis Methods.
 """
 import logging
 import math
-import time
 
 from pycpa import analysis
 from pycpa import model
 from pycpa import schedulers
 
-import new_database as db
 from Task import Task
 from Taskset import Taskset
-from utilization import basic_utilization_test
-
-# Global variables
-RTA_tests = ["Audsley", "Buttazzo", "CPA"]
 
 
 def RTA(taskset, test_name):
@@ -176,7 +170,7 @@ def _caluclate_response_time_buttazzo(taskset, check_task):
     return r_new
 
 
-def CPA(taskset):
+def cpa(taskset):
     # generate a new system
     s = model.System()
 
@@ -209,73 +203,7 @@ def CPA(taskset):
     return True
 
 
-def test_dataset(taskset_list, test_name):
-    """Test a hole dataset.
-
-    Keyword arguments:
-        dataset -- the dataset that should be tested.
-        test_name -- test that should be used.
-    """
-
-    global RTA_tests
-    if test_name not in RTA_tests:
-        # Invalid test name
-        logging.error("RTA/test_dataset(): Invalid test name!")
-        return
-
-    # Get number of task-sets in the dataset
-    number_of_tasksets = len(taskset_list)
-
-    # Variable for checking result of test
-    tp, fp, tn, fn = 0, 0, 0, 0
-
-    for i in range(number_of_tasksets):  # Iterate over all task-sets
-        taskset = taskset_list[i]
-        if test_name == "Audsley" or test_name == "Buttazzo":  # RTA according to Audsley or Buttazzo
-            schedulability = RTA(taskset, test_name)
-        elif test_name == "CPA":  # RTA with pyCPA
-            if basic_utilization_test(taskset) is True:
-                schedulability = CPA(taskset)
-            else:
-                schedulability = False
-        exit_value = taskset.result
-
-        # Analyse test
-        if schedulability is True and exit_value == 1:  # True positives
-            tp += 1
-        elif schedulability is True and exit_value == 0:  # False positives
-            fp += 1
-        elif schedulability is False and exit_value == 1:  # False negatives
-            fn += 1
-        elif schedulability is False and exit_value == 0:  # True negatives
-            tn += 1
-
-    # Print results
-    s = "-------------------- RESULTS OF RTA ACCORDING TO " + test_name.upper() + " --------------------"
-    print(s)
-    print("Correct: {0:d} / {1:d} -> {2:.0f}%".format(tp + tn, number_of_tasksets,
-                                                      (tp + tn) * 100 / number_of_tasksets))
-    print("Incorrect: {0:d} / {1:d} -> {2:.0f}%".format(fp + fn, number_of_tasksets,
-                                                        (fp + fn) * 100 / number_of_tasksets))
-    print("True positive (tp) = {0:d}".format(tp))
-    print("False positive (fp) = {0:d}".format(fp))
-    print("True negative (tn) = {0:d}".format(tn))
-    print("False negative (fn) = {0:d}".format(fn))
-    print("-" * len(s))
-
-
 if __name__ == "__main__":
     # Configure logging: format should be "LEVELNAME: Message",
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.ERROR)
-
-    print("Reading task-sets from the database...")
-    start_time = time.time()
-    dataset = db.get_dataset()
-    end_time = time.time()
-    print("Time elapsed = ", end_time - start_time)
-
-    start_time = time.time()
-    test_dataset(dataset, "CPA")
-    end_time = time.time()
-    print("Time elapsed = ", end_time - start_time)

@@ -119,7 +119,7 @@ def get_dataset():
         return None
 
     # Limit number of rows
-    #rows = rows[:5000]
+    #rows = rows[:100]
 
     # iterate over all rows
     for row in rows:

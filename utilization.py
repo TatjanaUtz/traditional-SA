@@ -1,13 +1,8 @@
 """Utilization-based Schedulability Tests."""
 
 import logging
-import time
 
-import new_database as db
 from Taskset import Taskset
-
-# Global variables
-utilization_tests = ["basic_utilization_test", "RM_utilization_test", "HB_utilization_test"]
 
 
 def basic_utilization_test(taskset):
@@ -51,7 +46,7 @@ def basic_utilization_test(taskset):
         return False
 
 
-def RM_utilization_test(taskset):
+def rm_utilization_test(taskset):
     """Utilization-based schedulability test.
 
     This test was introduced by Liu and Layland in 1973 for the rate monothonic (RM) algorithm.
@@ -92,7 +87,7 @@ def RM_utilization_test(taskset):
         return False
 
 
-def HB_utilization_test(taskset):
+def hb_utilization_test(taskset):
     """Utilization-based schedulability test.
 
     The test was introduced by Bini und Buttazzo 2001 and 2003. It is based on the RM-test of Liu and
@@ -127,69 +122,7 @@ def HB_utilization_test(taskset):
         return False
 
 
-def test_dataset(taskset_list, test_name):
-    """Test a hole dataset.
-
-    Keyword arguments:
-        dataset -- the dataset that should be tested
-        test_name -- the test that should be performed
-    """
-    global utilization_tests
-    if test_name not in utilization_tests:
-        # Invalid test name
-        logging.error("utilization/test_dataset(): Invalid test name!")
-        return
-
-    # Get number of task-sets in the dataset
-    number_of_tasksets = len(taskset_list)
-
-    # Variable for checking result of test
-    tp, fp, tn, fn = 0, 0, 0, 0
-
-    for i in range(number_of_tasksets):  # Iterate over all task-sets
-        taskset = taskset_list[i]
-        if test_name == "basic_utilization_test":
-            schedulability = basic_utilization_test(taskset)
-        elif test_name == "RM_utilization_test":
-            schedulability = RM_utilization_test(taskset)
-        elif test_name == "HB_utilization_test":
-            schedulability = HB_utilization_test(taskset)
-
-        exit_value = taskset.result
-
-        # Analyse test
-        if schedulability is True and exit_value == 1:  # True positives
-            tp += 1
-        elif schedulability is True and exit_value == 0:  # False positives
-            fp += 1
-        elif schedulability is False and exit_value == 1:  # False negatives
-            fn += 1
-        elif schedulability is False and exit_value == 0:  # True negatives
-            tn += 1
-
-    # Print results
-    s = "---------- RESULTS OF " + test_name + " ----------"
-    print(s)
-    print("Correct: {0:d} / {1:d} -> {2:.0f}%".format(tp + tn, number_of_tasksets,
-                                                      (tp + tn) * 100 / number_of_tasksets))
-    print("Incorrect: {0:d} / {1:d} -> {2:.0f}%".format(fp + fn, number_of_tasksets,
-                                                        (fp + fn) * 100 / number_of_tasksets))
-    print("True positive (tp) = {0:d}".format(tp))
-    print("False positive (fp) = {0:d}".format(fp))
-    print("True negative (tn) = {0:d}".format(tn))
-    print("False negative (fn) = {0:d}".format(fn))
-    print("-" * len(s))
-
-
 if __name__ == "__main__":
     # Configure logging: format should be "LEVELNAME: Message",
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-
-    start_time = time.time()
-    dataset = db.get_dataset()
-    end_time = time.time()
-    print("Time elapsed = ", end_time - start_time)
-    test_dataset(dataset, "basic_utilization_test")
-    test_dataset(dataset, "RM_utilization_test")
-    test_dataset(dataset, "HB_utilization_test")
