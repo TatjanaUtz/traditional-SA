@@ -9,29 +9,27 @@
                         1 - highest priority
                         126 - lowest priority
     - All tasks left with priority 127 are scheduled according to the earliest deadline first (EDF) algorithm.
+    - If more than one task should be executed, the tasks with same priority are executed according to Round Robin (RR)
 
     Source:
     http://projects.laas.fr/simso/doc/write_scheduler.html
 """
 
+import logging  # import logging for logging messages
+
 from simso.core import Scheduler  # import scheduler class
+from simso.schedulers import scheduler
 
 
+# Define required task fields - must be added to task description
+@scheduler("fp_edf_scheduler.py",
+           required_task_fields=[{'name': 'priority', 'type': 'int', 'default': '0'}])
 class fp_edf_scheduler(Scheduler):  # define fp_edf_scheduler as subclass of scheduler
     """The implementation of a scheduler.
 
     Subclass of abstract class Scheduler.
     The scheduling events are modeled by method calls which take as arguments the jobs and the processors.
     The init(), on_activate(), on_terminate() and schedule() methods should be redefined in order to interact with the simulation.
-
-    Args:
-        sim - Model instance
-        scheduler_info - a SchedulerInfo representing the scheduler
-
-    Attributes:
-        sim - Model instance, useful to get current time with sim.now_ms() (in ms) or sim.now() (in cycles)
-        processors - list of processors handled by this scheduler
-        task_list: list of tasks handled by this scheduler
     """
 
     def init(self):
@@ -41,7 +39,7 @@ class fp_edf_scheduler(Scheduler):  # define fp_edf_scheduler as subclass of sch
         This method is guaranteed to be called when the simulation starts, after the tasks are instantiated.
         The scheduler logic should be initialized here.
         """
-        self.read_list = []  # define a empty ready list
+        self.ready_list = []  # define a empty ready list
 
     def on_activate(self, job):
         """On_activate method.
@@ -51,7 +49,7 @@ class fp_edf_scheduler(Scheduler):  # define fp_edf_scheduler as subclass of sch
         Args:
             job -   the activated job
         """
-        self.read_list.append(job)  # append the job to the ready list
+        self.ready_list.append(job)  # append the job to the ready list
         job.cpu.resched()  # indirectly call the scheduler
         # self.processors[0].resched()   # run the scheduler on the first (and only) processor of the system
 
@@ -63,7 +61,7 @@ class fp_edf_scheduler(Scheduler):  # define fp_edf_scheduler as subclass of sch
         Args:
             job - the job that terminates
         """
-        self.read_list.remove(job)  # remove the job from the ready list
+        self.ready_list.remove(job)  # remove the job from the ready list
         job.cpu.resched()  # indirectly call the scheduler
         # self.processors[0].resched()   # run the scheduler on the first (and only) processor of the system
 
@@ -79,9 +77,31 @@ class fp_edf_scheduler(Scheduler):  # define fp_edf_scheduler as subclass of sch
         Return:
             a decision or a list of decisions, a decision is a couple (job, cpu)
         """
-        if self.read_list:  # at least one job is ready
-            job = min(self.read_list,
-                      key=lambda x: x.absolute_deadline)  # select job with the highest priority
+        if self.ready_list:  # at least one job is ready
+
+            # Get the lowest priority-attribute-value (i.e. the highest priority) of all ready jobs
+            prio_low = min(self.ready_list, key=lambda x: x.data['priority']).data['priority']
+
+            if prio_low >= 1 and prio_low < 127:  # Lowest priority-attribute-value is less than 127
+                # Schedule according to FP-algorithm
+                logging.debug("FP-algorithm!")
+
+                # Get the job with the lowest priority-attribute-value (i.e. the job with the highest priority)
+                job = min(self.ready_list, key=lambda x: x.data['priority'])
+
+            elif prio_low == 127:  # Lowest priority-attribute-value is 127
+                # Schedule according to EDF-algorithm
+                logging.debug("EDF-algorithm!")
+
+                # Get the job with the lowest deadline-attribute-value (i.e. the job with the next deadline)
+                job = min(self.ready_list, key=lambda x: x.absolute_deadline)
+
+            else:  # Error: not a valid priority-attribute-value!
+                logging.error(
+                    "fp_edf_scheduler.py/fp_edf_scheduler/schedule(): {0:d} is not a valid priority value!".format(
+                        prio_low))
+                return None
+
         else:  # no job is ready
             job = None
 
