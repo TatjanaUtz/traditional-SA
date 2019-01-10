@@ -4,33 +4,23 @@ Response Time Analysis Methods.
 import logging
 import math
 
-from pycpa import analysis
-from pycpa import model
-from pycpa import schedulers
-
 from Task import Task
 from Taskset import Taskset
 
 
-def RTA(taskset, test_name):
-    """Response Time Analysis.
+def rta_audsley(taskset):
+    """Response Time Analysis according to Audsley.
 
     Check the schedulability of a task-set with response time analysis.
     Calculate the response times of all tasks. The task-set is schedulable if and only if for all
     tasks: R_i <= D_i
 
     Keyword arguments:
-        taskset -- the taskset
+        taskset -- the task-set that should be tested
     Return value:
         True/False -- schedulability of task-set
         -1 -- an error occurred
     """
-    global RTA_tests
-    if test_name not in RTA_tests:
-        # Invalid test name
-        logging.error("RTA/RTA(): Invalid test name!")
-        return
-
     # Check input argument: must be a TaskSet
     if not isinstance(taskset, Taskset):  # Invalid input argument
         logging.error("RTA/RTA(): invalid input argument, must be a TaskSet!")
@@ -39,11 +29,7 @@ def RTA(taskset, test_name):
     # Check schedulability of all tasks in the task-set
     for i in range(len(taskset)):  # Iterate over all tasks
         # Get response time of task
-        if test_name == "Audsley":
-            response_time = _caluclate_response_time_audsley(taskset, taskset[i])
-        elif test_name == "Buttazzo":
-            response_time = _caluclate_response_time_buttazzo(taskset, taskset[i])
-        logging.debug("WCRT of Task " + str(i) + " = " + str(response_time))
+        response_time = _caluclate_response_time_audsley(taskset, taskset[i])
 
         # Check schedulability of task
         if response_time == -1:  # an error occurred
@@ -51,11 +37,9 @@ def RTA(taskset, test_name):
             return -1
         elif response_time is False or response_time > taskset[i].deadline:
             # Task-set is NOT schedulable
-            logging.debug("Task-set is NOT schedulable!")
             return False
 
     # All tasks are schedulable -> task-set is schedulable
-    logging.debug("Task-set is schedulable!")
     return True
 
 
@@ -111,6 +95,41 @@ def _caluclate_response_time_audsley(taskset, check_task):
             return False
 
     return r_new
+
+
+def rta_buttazzo(taskset):
+    """Response Time Analysis according to Buttazzo.
+
+    Check the schedulability of a task-set with response time analysis.
+    Calculate the response times of all tasks. The task-set is schedulable if and only if for all
+    tasks: R_i <= D_i
+
+    Keyword arguments:
+        taskset -- the task-set that should be tested
+    Return value:
+        True/False -- schedulability of task-set
+        -1 -- an error occurred
+    """
+    # Check input argument: must be a TaskSet
+    if not isinstance(taskset, Taskset):  # Invalid input argument
+        logging.error("RTA/RTA(): invalid input argument, must be a TaskSet!")
+        return -1
+
+    # Check schedulability of all tasks in the task-set
+    for i in range(len(taskset)):  # Iterate over all tasks
+        # Get response time of task
+        response_time = _caluclate_response_time_buttazzo(taskset, taskset[i])
+
+        # Check schedulability of task
+        if response_time == -1:  # an error occurred
+            logging.error("RTA/RTA(): error value returned from _calculate_response_time()")
+            return -1
+        elif response_time is False or response_time > taskset[i].deadline:
+            # Task-set is NOT schedulable
+            return False
+
+    # All tasks are schedulable -> task-set is schedulable
+    return True
 
 
 def _caluclate_response_time_buttazzo(taskset, check_task):
@@ -170,37 +189,37 @@ def _caluclate_response_time_buttazzo(taskset, check_task):
     return r_new
 
 
-def cpa(taskset):
-    # generate a new system
-    s = model.System()
-
-    # add resources (CPUs) to the system
-    # and register the static priority preemptive scheduler
-    r1 = s.bind_resource(model.Resource("R1", schedulers.SPPSchedulerRoundRobin()))
-
-    # create and bind tasks to r1
-    # register a periodic event model for all tasks
-    tasks = []
-    for i in range(len(taskset)):
-        tasks.append(r1.bind_task(model.Task(str(taskset[i].id), wcet=taskset[i].execution_time,
-                                             scheduling_parameter=taskset[i].priority)))
-        tasks[i].in_event_model = model.PJdEventModel(P=taskset[i].period)
-
-    # perform the analysis
-    task_results = analysis.analyze_system(s)
-
-    # print the worst case response times (WCRTs)
-    # check schedulability WCRT <= D
-    for r in s.resources:
-        i = 0
-        for t in r.tasks:
-            wcrt = task_results[t].wcrt
-            deadline = taskset[i].deadline
-            if wcrt > deadline:
-                return False
-            i += 1
-
-    return True
+# def cpa(taskset):
+#     # generate a new system
+#     s = model.System()
+#
+#     # add resources (CPUs) to the system
+#     # and register the static priority preemptive scheduler
+#     r1 = s.bind_resource(model.Resource("R1", schedulers.SPPSchedulerRoundRobin()))
+#
+#     # create and bind tasks to r1
+#     # register a periodic event model for all tasks
+#     tasks = []
+#     for i in range(len(taskset)):
+#         tasks.append(r1.bind_task(model.Task(str(taskset[i].id), wcet=taskset[i].execution_time,
+#                                              scheduling_parameter=taskset[i].priority)))
+#         tasks[i].in_event_model = model.PJdEventModel(P=taskset[i].period)
+#
+#     # perform the analysis
+#     task_results = analysis.analyze_system(s)
+#
+#     # print the worst case response times (WCRTs)
+#     # check schedulability WCRT <= D
+#     for r in s.resources:
+#         i = 0
+#         for t in r.tasks:
+#             wcrt = task_results[t].wcrt
+#             deadline = taskset[i].deadline
+#             if wcrt > deadline:
+#                 return False
+#             i += 1
+#
+#     return True
 
 
 if __name__ == "__main__":

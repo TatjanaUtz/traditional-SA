@@ -19,7 +19,7 @@ def basic_utilization_test(taskset):
     # Check input argument
     if taskset is None or not isinstance(taskset, Taskset):
         logging.error(
-            "utilization/basic_utilization_test(): wrong input argument or no task-set given!")
+            "utilization.py/basic_utilization_test(): invalid taskset!")
         return -1
 
     total_utilization = 0  # Reset total utilization
@@ -64,7 +64,7 @@ def rm_utilization_test(taskset):
     # Check input argument
     if taskset is None or not isinstance(taskset, Taskset):
         logging.error(
-            "utilization/RM_utilization_test(): wrong input argument or no task-set given!")
+            "utilization.py/rm_utilization_test(): invalid task-set!")
         return -1
 
     total_utilization = 0  # Reset total utilization
@@ -102,7 +102,7 @@ def hb_utilization_test(taskset):
     # Check input argument
     if taskset is None or not isinstance(taskset, Taskset):
         logging.error(
-            "utilization/basic_utilization_test(): wrong input argument or no task-set given!")
+            "utilization.py/hb_utilization_test(): invalid task-set!")
         return -1
 
     total_utilization = 0  # Reset total utilization
