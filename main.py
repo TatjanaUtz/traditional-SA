@@ -1,5 +1,6 @@
 """Main file of project."""
 
+import argparse
 import logging
 import time
 
@@ -7,11 +8,11 @@ import RTA
 import new_database as db
 import simulation
 import utilization
+from Taskset import Taskset
 
 valid_SA = [simulation.simulate, utilization.basic_utilization_test,
-            utilization.rm_utilization_test,
-            utilization.hb_utilization_test,
-            "RTA_audsley", "RTA_buttazzo", RTA.cpa]
+            utilization.rm_utilization_test, utilization.hb_utilization_test, RTA.rta_audsley,
+            RTA.rta_buttazzo]  # TODO: Add workload tests
 
 
 def print_results(test_name, tp, fp, tn, fn, other):
@@ -28,6 +29,7 @@ def print_results(test_name, tp, fp, tn, fn, other):
     sum = tp + fp + tn + fn  # sum of correct and incorrect results
     correct = tp + tn  # number of correct results
     incorrect = fp + fn  # number of incorrect results
+    print("\n")
     s = "---------- Results of " + test_name + " ----------"
     print(s)
     print("Correct results: {0:d} / {1:d} = {2:.0f}%".format(correct, sum, correct * 100 / sum))
@@ -51,6 +53,12 @@ def test_dataset(dataset, function):
         -1 if an error occured
     """
     # Check input arguments
+    if not isinstance(dataset, list):  # Check if dataset ia a list
+        logging.error("main.py/test_dataset(): Invalid dataset! Dataset must be a list!")
+        return -1
+    if not all(isinstance(item, Taskset) for item in dataset):  # Check if all items are tasksets
+        logging.error("main.py/test_dataset(): Invalid dataset! Dataset must contain tasksets!")
+        return -1
     if function not in valid_SA:  # invalid SA function
         logging.error("main.py/test_dataset(): Invalid schedulability analysis method!")
         return -1
@@ -80,57 +88,103 @@ def test_dataset(dataset, function):
             others += 1
 
     # Print results of simulation
-    print_results(str(function), tp, fp, tn, fn, others)
+    print_results(function.__name__, tp, fp, tn, fn, others)
+
+
+def read_input():
+    """Read input from command line.
+
+    This methods reads the arguments of the script-call.
+
+    Return:
+        list with tests that should be done
+        None -- no test was selected
+    """
+    # Create argument parser
+    parser = argparse.ArgumentParser()
+
+    # Add arguments to the parser
+    parser.add_argument("--test_all", help="run all available tests",
+                        action="store_true")  # add argument for running all tests
+    parser.add_argument("-s", "--simulation", help="run simulation",
+                        action="store_true")  # add argument for simulation
+    parser.add_argument("-u", "--utilization", help="run utilization tests",
+                        action="store_true")  # add argument for utilization tests
+    parser.add_argument("-rta", "--response_time_analysis", help="run response time analysis",
+                        action="store_true")  # add argument for response time analysis (RTA)
+    parser.add_argument("-w", "--workload", help="run workload tests",
+                        action="store_true")  # add argument for workload tests
+
+    # Parse arguments
+    args = parser.parse_args()
+
+    # Create empty to-do list for tests that should be run
+    tests_todo = []
+
+    if args.test_all:  # run all tests
+        print("Testing all...")
+        tests_todo = valid_SA
+    else:
+        if args.simulation:  # run simulation
+            print("Simulating...")
+
+            # Add simulation to the to-do list
+            tests_todo.append(simulation.simulate)
+
+        if args.utilization:  # run utilization tests
+            print("Doing utiliziaton tests...")
+
+            # Add the corresponding tests to the to-do list
+            tests_todo.append(utilization.basic_utilization_test)
+            tests_todo.append(utilization.rm_utilization_test)
+            tests_todo.append(utilization.hb_utilization_test)
+
+        if args.response_time_analysis:  # run response time analysis
+            print("Doing response time analyis...")
+
+            # Add the corresponding tests to the to-do list
+            tests_todo.append(RTA.rta_audsley)
+            tests_todo.append(RTA.rta_buttazzo)
+
+        if args.workload:  # run workload tests
+            print("Doing workload tests...")
+
+            # Add the corresponding tests to the to-do list
+            # TODO: Add tests
+
+    if len(tests_todo) == 0:
+        print("Doing nothing...")
+        return None
+    else:
+        return tests_todo
 
 
 def main():
     """Main function of project."""
 
-    # --- Read task-sets from database ---
-    print("Reading task-sets from the database...")
-    start_time = time.time()
-    dataset = db.get_dataset()
-    end_time = time.time()
-    print("Time elapsed = ", end_time - start_time)
+    # Read the tests that should be performed (defined by command line arguments)
+    test_todo = read_input()
 
-    # --- Simulation ---
-    start_time = time.time()
-    test_dataset(dataset, simulation.simulate)
-    end_time = time.time()
-    print("Time elapsed = ", end_time - start_time)
+    if test_todo is not None:  # at least one test should be done
+        print("Tests to do: " + str([test.__name__ for test in test_todo]))
 
-    # --- Utilization Tests ---
-    # start_time = time.time()
-    # test_dataset(dataset, utilization.basic_utilization_test)
-    # # utilization.test_dataset(dataset, "basic_utilization_test")
-    # end_time = time.time()
-    # print("Time elapsed = ", end_time - start_time)
+        # Read task-sets from database
+        print("Reading task-sets from the database...")
+        start_time = time.time()
+        dataset = db.get_dataset()
+        end_time = time.time()
+        print("Read {} task-sets from the database!".format(len(dataset)))
+        print("Time elapsed = ", end_time - start_time)
 
-    # start_time = time.time()
-    # utilization.test_dataset(dataset, "RM_utilization_test")
-    # end_time = time.time()
-    # print("Time elapsed = ", end_time - start_time)
-    #
-    # start_time = time.time()
-    # utilization.test_dataset(dataset, "HB_utilization_test")
-    # end_time = time.time()
-    # print("Time elapsed = ", end_time - start_time)
+        # Iterate through the to-do list and perform tests
+        for test in test_todo:
+            start_time = time.time()  # Save start time
+            test_dataset(dataset, test)  # Run test
+            end_time = time.time()  # Save end time
+            print("Time elapsed = ", end_time - start_time)  # print elapsed time
 
-    # --- Response Time Analysis ---
-    # start_time = time.time()
-    # RTA.test_dataset(dataset, "Audsley")
-    # end_time = time.time()
-    # print("Time elapsed = ", end_time - start_time)
-    #
-    # start_time = time.time()
-    # RTA.test_dataset(dataset, "Buttazzo")
-    # end_time = time.time()
-    # print("Time elapsed = ", end_time - start_time)
-    #
-    # start_time = time.time()
-    # RTA.test_dataset(dataset, "CPA")
-    # end_time = time.time()
-    # print("Time elapsed = ", end_time - start_time)
+    else:  # no test should be performed
+        print("Nothing to do...")
 
 
 if __name__ == "__main__":
