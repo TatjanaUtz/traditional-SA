@@ -8,11 +8,12 @@ import RTA
 import new_database as db
 import simulation
 import utilization
+import workload
 from Taskset import Taskset
 
 valid_SA = [simulation.simulate, utilization.basic_utilization_test,
             utilization.rm_utilization_test, utilization.hb_utilization_test, RTA.rta_audsley,
-            RTA.rta_buttazzo]  # TODO: Add workload tests
+            RTA.rta_buttazzo, workload.workload_test, workload.workload_test_LSD]
 
 
 def print_results(test_name, tp, fp, tn, fn, other):
@@ -150,7 +151,8 @@ def read_input():
             print("Doing workload tests...")
 
             # Add the corresponding tests to the to-do list
-            # TODO: Add tests
+            tests_todo.append(workload.workload_test)
+            tests_todo.append(workload.workload_test_LSD)
 
     if len(tests_todo) == 0:
         print("Doing nothing...")
