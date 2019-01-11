@@ -26,6 +26,8 @@ class Task:
         self.period = period
         self.number_of_jobs = number_of_jobs
         self.execution_time = execution_time
+        if self.deadline == -1:
+            self.deadline = self.period
 
     # String representation
     def __str__(self):
