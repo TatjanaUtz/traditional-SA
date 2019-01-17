@@ -36,10 +36,10 @@ def print_results(test_name, tp, fp, tn, fn, other):
     print("Correct results: {0:d} / {1:d} = {2:.0f}%".format(correct, sum, correct * 100 / sum))
     print(
         "Incorrect results: {0:d}/ {1:d} = {2:.0f}%".format(incorrect, sum, incorrect * 100 / sum))
-    print("True positive results (tp) = {0:d}".format(tp))
-    print("False positive results (fp) = {0:d}".format(fp))
-    print("True negative results (tn) = {0:d}".format(tn))
-    print("False negative results (fn) = {0:d}".format(fn))
+    print("True positive results (tp) = {0:d} = {1:.0f}%".format(tp, tp*100/sum))
+    print("False positive results (fp) = {0:d} = {1:.0f}%".format(fp, fp*100/sum))
+    print("True negative results (tn) = {0:d} = {1:.0f}%".format(tn, tn*100/sum))
+    print("False negative results (fn) = {0:d} = {1:.0f}%".format(fn, fn*100/sum))
     print("Other results = {0:d}".format(other))
     print("-" * len(s))
 

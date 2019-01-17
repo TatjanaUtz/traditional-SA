@@ -10,7 +10,7 @@ from Taskset import Taskset  # for creating task-sets
 # attributes of the database
 db_dir = os.path.dirname(
     os.path.abspath(__file__))  # path to the database = current working directory
-db_name = "panda_v1.db"  # name of the database
+db_name = "panda_v2.db"  # name of the database
 
 _db_connection = None  # connection to the database
 _db_cursor = None  # cursor for working with the database
