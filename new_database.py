@@ -119,7 +119,7 @@ def get_dataset():
         return None
 
     # Limit number of rows
-    #rows = rows[:100]
+    rows = rows[:100]
 
     # iterate over all rows
     for row in rows:
@@ -260,6 +260,51 @@ def get_task(id):
 
         # Return created task
         return new_task
+
+
+# get all tasks
+def get_all_tasks():
+    """Read all tasks from the database.
+
+    Extracts the attributes of all tasks and creates a list of task-objects.
+    Return:
+        list with all tasks
+        -1 - an error occurred
+    """
+
+    # open database if not connected
+    global _db_connection, _db_cursor
+    if _db_connection is None or _db_cursor is None:
+        open_DB()
+
+    # read all tasks
+    _db_cursor.execute("SELECT * FROM Task")
+    rows = _db_cursor.fetchall()
+
+    # close database
+    close_DB()
+
+    # check number of rows
+    if len(rows) < 1:  # no tasks found
+        logging.error("new_database.py/get_all_tasks(): no tasks found!")
+        return -1
+    else:  # at least one task was found
+        task_list = []  # empty list for tasks
+        # iterate over all rows, extract attributes and create task
+        for row in rows:
+            id = row[0]
+            priority = row[1]
+            pkg = row[5]
+            arg = row[6]
+            deadline = row[9]
+            period = row[10]
+            number_of_jobs = row[11]
+
+            new_task = Task(id=id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
+                            period=period, number_of_jobs=number_of_jobs)
+
+            task_list.append(new_task)
+        return task_list
 
 
 if __name__ == "__main__":
