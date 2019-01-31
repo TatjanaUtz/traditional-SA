@@ -2,7 +2,6 @@
 import logging  # for logging
 import os
 import sqlite3  # for working with the database
-import time
 
 from Task import Task  # for creating tasks
 from Taskset import Taskset  # for creating task-sets
@@ -307,16 +306,96 @@ def get_all_tasks():
         return task_list
 
 
+# get all jobs of a task
+def get_jobs_C(task_id):
+    """Read all jobs of a task from the database.
+
+    Extracts the attributes of all jobs of a task defined by task_id.
+    Args:
+        task_id - id of the task which jobs are wanted
+    Return:
+        list with execution times of jobs
+        -1 -  an error occured
+    """
+    # Check input argument - must be a positive integer number
+    if not isinstance(task_id, int) or task_id < 0:
+        logging.error(
+            "new_database.py/get_jobs(): invalid input argument - must be a positive int!")
+        return -1
+
+    # Open database if not connected
+    global _db_connection, _db_cursor
+    if _db_connection is None or _db_cursor is None:
+        open_DB()
+
+    # Read all jobs of task defined by task_id that where executed successful (Exit_Value = EXIT)
+    _db_cursor.execute("SELECT * FROM Job WHERE Task_ID = ? AND Exit_Value = ?", (task_id, "EXIT"))
+    rows = _db_cursor.fetchall()
+
+    # close database
+    close_DB()
+
+    # Check number of rows
+    if len(rows) == 0:  # no jobs found
+        logging.error("new_database.py/get_jobs(): no jobs for Task-ID " + str(task_id) + " found!")
+        return -1
+
+    # create empty list for execution times
+    execution_times = []
+
+    # For each job extract attributes and create a new job-object
+    for row in rows:
+        start_date = row[3]
+        end_date = row[4]
+        execution_time = end_date - start_date
+
+        if (execution_time > 0):
+            execution_times.append(execution_time)
+
+    return execution_times
+
+
+# save execution times of tasks
+def save_execution_times(task_dict):
+    """Save execution times in the database.
+
+    Saves the given execution times to the database. The values of a key consist of (min_C, max_C, average_C)
+    Args:
+        task_dict - dictionary with task execution times
+    """
+    # Open database if not connected
+    global _db_connection, _db_cursor
+    if _db_connection is None or _db_cursor is None:
+        open_DB()
+
+    # create table "ExecutionTimes" if it does not exist
+    create_table_sql = "CREATE TABLE IF NOT EXISTS ExecutionTimes (PKG_Arg text PRIMARY KEY, Min_C integer, Max_C integer, Average_C integer);"
+    try:
+        _db_cursor.execute(create_table_sql)
+    except sqlite3.Error as e:
+        print(e)
+
+    # sql statement for inserting or replacing a row in the ExecutionTimes table
+    insert_or_replace_sql = "INSERT OR REPLACE INTO ExecutionTimes(PKG_Arg, Min_C, Max_C, Average_C) VALUES(?, ?, ?, ?)"
+
+    # iterate over all dictionary keys
+    for key in task_dict:
+        # insert or replace the row with the given execution times
+        if isinstance(key, str):  # key = (PKG)
+            _db_cursor.execute(insert_or_replace_sql,
+                               (key, task_dict[key][0], task_dict[key][1], task_dict[key][2]))
+        elif len(key) == 2:  # key is combination of pkg and arg: key = (PKG, Arg)
+            _db_cursor.execute(insert_or_replace_sql, (
+            key[0] + "_" + str(key[1]), task_dict[key][0], task_dict[key][1], task_dict[key][2]))
+
+    # save (commit) the changes
+    _db_connection.commit()
+
+    # close database
+    close_DB()
+
+
 if __name__ == "__main__":
     # Configure logging: format should be "LEVELNAME: Message",
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
-
-    start_time = time.time()
-    dataset = get_dataset()
-    end_time = time.time()
-    print("Time elapsed = ", end_time - start_time)
-    print("\n")
-    print(dataset[0])
-    print(dataset[1])
-    print(dataset[-1])
