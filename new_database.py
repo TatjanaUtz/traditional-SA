@@ -2,6 +2,7 @@
 import logging  # for logging
 import os
 import sqlite3  # for working with the database
+from enum import Enum  # for execution time type
 
 from Task import Task  # for creating tasks
 from Taskset import Taskset  # for creating task-sets
@@ -15,10 +16,11 @@ _db_connection = None  # connection to the database
 _db_cursor = None  # cursor for working with the database
 _current_taskset = 0  # index of next un-read task-set
 
+# task execution times
 _execution_time = {
-    ("hey", 0): 1045,
-    ("hey", 1000): 1094,
-    ("hey", 1000000): 1071,
+    ("hey", 0): (1045, 1045, 1045),
+    ("hey", 1000): (1094, 1094, 1094),
+    ("hey", 1000000): (1071, 1071, 1071),
 
     ("pi", 100): 1574,
     ("pi", 10000): 1693,
@@ -51,6 +53,16 @@ _execution_time = {
     "cond_mod": 1366,
     "tumatmul": 2090
 }
+
+# enum for types of execution times
+class Execution_Time_Type(Enum):
+    MIN = 0  # minimum execution time (BCET, best case execution time)
+    MAX = 1  # maximum execution time (WCET, worst case execution time)
+    AVERAGE = 2  # average execution time
+
+
+# Which type of execution time should be used?
+_C_Type = Execution_Time_Type.AVERAGE
 
 
 # Open database
@@ -104,6 +116,9 @@ def get_dataset():
     global _db_connection, _db_cursor
     if _db_connection is None or _db_cursor is None:
         open_DB()
+
+    # Read execution times from the database
+    read_execution_times()
 
     # Read all task-sets from the database
     _db_cursor.execute("SELECT * FROM TaskSet")
@@ -248,10 +263,10 @@ def get_task(id):
 
         # Define execution time depending on pkg and arg
         if (pkg, arg) in _execution_time:  # combination of pkg and arg exists
-            execution_time = _execution_time[(pkg, arg)]
+            execution_time = _execution_time[(pkg, arg)][C_Type]
         else:  # combination of pkg and arg does not exist
             # use only pkg to determine execution time
-            execution_time = _execution_time[pkg]
+            execution_time = _execution_time[pkg][C_Type]
 
         # Create new task
         new_task = Task(id=id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
@@ -386,13 +401,45 @@ def save_execution_times(task_dict):
                                (key, task_dict[key][0], task_dict[key][1], task_dict[key][2]))
         elif len(key) == 2:  # key is combination of pkg and arg: key = (PKG, Arg)
             _db_cursor.execute(insert_or_replace_sql, (
-            key[0] + "_" + str(key[1]), task_dict[key][0], task_dict[key][1], task_dict[key][2]))
+                key[0] + "_" + str(key[1]), task_dict[key][0], task_dict[key][1],
+                task_dict[key][2]))
 
     # save (commit) the changes
     _db_connection.commit()
 
     # close database
     close_DB()
+
+# read execution times of tasks
+def read_execution_times():
+    """Read the execution times of the tasks from the database.
+
+    The minimum, maximum and average execution times of all tasks are saved in the table ExecutionTimes.
+    If this table is not present in the database, the default execution times in _default_execution_times are used.
+
+    Return:
+        -1 - an error occurred
+    """
+    # open database if not connected
+    global _db_connection, _db_cursor
+    if _db_connection is None or _db_cursor is None:
+        open_DB()
+
+    # read table ExecutionTimes
+    _db_cursor.execute("SELECT * FROM ExecutionTimes")
+    rows = _db_cursor.fetchall()
+
+    # check if execution times where found
+    if len(rows) == 0:  # now row was read
+        logging.error("new_database.py/read_execution_times(): table ExecutionTimes does not exist or is empty!")
+        return -1
+
+    # update execution time dictionary
+    for row in rows:    # iterate over all rows
+        # get data from row
+
+        # update dictionary
+        _execution_time.update()
 
 
 if __name__ == "__main__":
