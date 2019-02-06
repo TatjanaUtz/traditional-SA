@@ -2,7 +2,6 @@
 import logging  # for logging
 import os
 import sqlite3  # for working with the database
-from enum import Enum  # for execution time type
 
 from Task import Task  # for creating tasks
 from Taskset import Taskset  # for creating task-sets
@@ -22,47 +21,43 @@ _execution_time = {
     ("hey", 1000): (1094, 1094, 1094),
     ("hey", 1000000): (1071, 1071, 1071),
 
-    ("pi", 100): 1574,
-    ("pi", 10000): 1693,
-    ("pi", 100000): 1870,
+    ("pi", 100): (1574, 1574, 1574),
+    ("pi", 10000): (1693, 1693, 1693),
+    ("pi", 100000): (1870, 1870, 1870),
 
-    ("cond_42", 41): 1350,
-    ("cond_42", 42): 1376,
-    ("cond_42", 10041): 1413,
-    ("cond_42", 10042): 1432,
-    ("cond_42", 1000041): 1368,
-    ("cond_42", 1000042): 1396,
+    ("cond_42", 41): (1350, 1350, 1350),
+    ("cond_42", 42): (1376, 1376, 1376),
+    ("cond_42", 10041): (1413, 1413, 1413),
+    ("cond_42", 10042): (1432, 1432, 1432),
+    ("cond_42", 1000041): (1368, 1368, 1368),
+    ("cond_42", 1000042): (1396, 1396, 1396),
 
-    ("cond_mod", 100): 1323,
-    ("cond_mod", 103): 1351,
-    ("cond_mod", 10000): 1395,
-    ("cond_mod", 10003): 1391,
-    ("cond_mod", 1000000): 1342,
-    ("cond_mod", 1000003): 1391,
+    ("cond_mod", 100): (1323, 1323, 1323),
+    ("cond_mod", 103): (1351, 1351, 1351),
+    ("cond_mod", 10000): (1395, 1395, 1395),
+    ("cond_mod", 10003): (1391, 1391, 1391),
+    ("cond_mod", 1000000): (1342, 1342, 1342),
+    ("cond_mod", 1000003): (1391, 1391, 1391),
 
-    ("tumatmul", 10): 1511,
-    ("tumatmul", 11): 1543,
-    ("tumatmul", 10000): 1692,
-    ("tumatmul", 10001): 1662,
-    ("tumatmul", 1000000): 3009,
-    ("tumatmul", 1000001): 3121,
+    ("tumatmul", 10): (1511, 1511, 1511),
+    ("tumatmul", 11): (1543, 1543, 1543),
+    ("tumatmul", 10000): (1692, 1692, 1692),
+    ("tumatmul", 10001): (1662, 1662, 1662),
+    ("tumatmul", 1000000): (3009, 3009, 3009),
+    ("tumatmul", 1000001): (3121, 3121, 3121),
 
-    "hey": 1070,
-    "pi": 1712,
-    "cond_42": 1389,
-    "cond_mod": 1366,
-    "tumatmul": 2090
+    "hey": (1070, 1070, 1070),
+    "pi": (1712, 1712, 1712),
+    "cond_42": (1389, 1389, 1389),
+    "cond_mod": (1366, 1366, 1366),
+    "tumatmul": (2090, 2090, 2090)
 }
 
-# enum for types of execution times
-class Execution_Time_Type(Enum):
-    MIN = 0  # minimum execution time (BCET, best case execution time)
-    MAX = 1  # maximum execution time (WCET, worst case execution time)
-    AVERAGE = 2  # average execution time
-
-
 # Which type of execution time should be used?
-_C_Type = Execution_Time_Type.AVERAGE
+# 0: minimum execution time (BCET, best case execution time)
+# 1: maximum execution time (WCET, worst case execution time)
+# 2: average execution time
+_C_Type = 1
 
 
 # Open database
@@ -263,10 +258,10 @@ def get_task(id):
 
         # Define execution time depending on pkg and arg
         if (pkg, arg) in _execution_time:  # combination of pkg and arg exists
-            execution_time = _execution_time[(pkg, arg)][C_Type]
+            execution_time = _execution_time[(pkg, arg)][_C_Type]
         else:  # combination of pkg and arg does not exist
             # use only pkg to determine execution time
-            execution_time = _execution_time[pkg][C_Type]
+            execution_time = _execution_time[pkg][_C_Type]
 
         # Create new task
         new_task = Task(id=id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
@@ -384,14 +379,19 @@ def save_execution_times(task_dict):
         open_DB()
 
     # create table "ExecutionTimes" if it does not exist
-    create_table_sql = "CREATE TABLE IF NOT EXISTS ExecutionTimes (PKG_Arg text PRIMARY KEY, Min_C integer, Max_C integer, Average_C integer);"
+    create_table_sql = "CREATE TABLE IF NOT EXISTS ExecutionTimes (" \
+                       "[PKG(Arg)] text PRIMARY KEY, " \
+                       "[Min_C] integer, " \
+                       "[Max_C] integer, " \
+                       "[Average_C] integer" \
+                       ");"
     try:
         _db_cursor.execute(create_table_sql)
     except sqlite3.Error as e:
         print(e)
 
     # sql statement for inserting or replacing a row in the ExecutionTimes table
-    insert_or_replace_sql = "INSERT OR REPLACE INTO ExecutionTimes(PKG_Arg, Min_C, Max_C, Average_C) VALUES(?, ?, ?, ?)"
+    insert_or_replace_sql = "INSERT OR REPLACE INTO ExecutionTimes([PKG(Arg)], Min_C, Max_C, Average_C) VALUES(?, ?, ?, ?)"
 
     # iterate over all dictionary keys
     for key in task_dict:
@@ -401,7 +401,7 @@ def save_execution_times(task_dict):
                                (key, task_dict[key][0], task_dict[key][1], task_dict[key][2]))
         elif len(key) == 2:  # key is combination of pkg and arg: key = (PKG, Arg)
             _db_cursor.execute(insert_or_replace_sql, (
-                key[0] + "_" + str(key[1]), task_dict[key][0], task_dict[key][1],
+                key[0] + "(" + str(key[1]) + ")", task_dict[key][0], task_dict[key][1],
                 task_dict[key][2]))
 
     # save (commit) the changes
@@ -409,6 +409,7 @@ def save_execution_times(task_dict):
 
     # close database
     close_DB()
+
 
 # read execution times of tasks
 def read_execution_times():
@@ -431,18 +432,34 @@ def read_execution_times():
 
     # check if execution times where found
     if len(rows) == 0:  # now row was read
-        logging.error("new_database.py/read_execution_times(): table ExecutionTimes does not exist or is empty!")
+        logging.error(
+            "new_database.py/read_execution_times(): table ExecutionTimes does not exist or is empty!")
         return -1
 
     # update execution time dictionary
-    for row in rows:    # iterate over all rows
+    for row in rows:  # iterate over all rows
         # get data from row
+        pkg_arg = row[0]
+        min_C = row[1]
+        max_C = row[2]
+        average_C = row[3]
+
+        # split pkg and arg and create dictionary entry
+        if '(' in pkg_arg:  # string contains pkg and arg
+            pkg, arg = pkg_arg.split('(')
+            arg = int(arg[:-1])  # delete last character = ')' and format to int
+            dict_entry = {(pkg, arg): (min_C, max_C, average_C)}
+        else:  # string contains only pkg, no arg
+            pkg = pkg_arg
+            dict_entry = {pkg: (min_C, max_C, average_C)}
 
         # update dictionary
-        _execution_time.update()
+        _execution_time.update(dict_entry)
 
 
 if __name__ == "__main__":
     # Configure logging: format should be "LEVELNAME: Message",
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+    dataset = get_dataset()
+    print(dataset[0])
