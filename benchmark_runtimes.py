@@ -9,6 +9,8 @@ def benchmark_runtimes():
     Reads all jobs of all tasks from the database and calculates the minimum, maximum and average
     execution time of each task defined by PKG and for each combination of PKG and arg.
     """
+    logging.debug("benchmark_runtimes.py/benchmark_runtimes(): Starting to benchmark runtimes...")
+
     # Get all tasks from the database
     task_list = db.get_all_tasks()
 
@@ -51,13 +53,19 @@ def benchmark_runtimes():
     for key in delete_keys:
         del task_dict[key]
 
+    logging.debug(
+        "benchmark_runtimes.py/benchmark_runtimes(): saving calculated execution times to database...")
+
     # save execution times to database
     db.save_execution_times(task_dict)
+
+    logging.debug(
+        "benchmark_runtimes.py/benchmark_runtimes(): saving successful! Benchmark finished!")
 
 
 if __name__ == "__main__":
     # Configure logging: format should be "LEVELNAME: Message",
     # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.ERROR)
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
     benchmark_runtimes()
