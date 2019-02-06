@@ -205,7 +205,7 @@ def _W_m_bool(k, x, hp_taskset, tau_m):
 
     # Generate list with all possible values of t that must be checked:
     # start with tau_m.execution_time and go to x
-    t_values = [i for i in range(tau_m.execution_time, x + 1)]
+    t_values = [i for i in range(int(tau_m.execution_time), x + 1)]
 
     # Iterate over all values of t and check if for any value of t W_m is <= 1
     for t in t_values:
