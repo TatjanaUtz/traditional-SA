@@ -1,4 +1,7 @@
-"""Main file of project."""
+"""Main file of project.
+
+Run this file for traditional schedulability analysis.
+"""
 
 import argparse
 import logging
