@@ -3,10 +3,10 @@
     The algorithm is the following: a list of ready jobs is kept up-to-date using the on_activate
     and on_terminated methods. When the schedule method is called, the ready job is chosen according
     to the priorities:
-    - Tasks can have priority values from 1 ... 127.
-    - A priority from 1 ... 126 means, that the task is scheduled according to the fixed priority (FP) algorithm.
+    - Tasks can have priority values from 0 ... 127.
+    - A priority from 0 ... 126 means, that the task is scheduled according to the fixed priority (FP) algorithm.
     Priority order is:
-                        1 - highest priority
+                        0 - highest priority
                         126 - lowest priority
     - All tasks left with priority 127 are scheduled according to the earliest deadline first (EDF) algorithm.
     - If more than one task should be executed, the tasks with same priority are executed according to Round Robin (RR)
@@ -82,7 +82,7 @@ class fp_edf_scheduler(Scheduler):  # define fp_edf_scheduler as subclass of sch
             # Get the lowest priority-attribute-value (i.e. the highest priority) of all ready jobs
             prio_low = min(self.ready_list, key=lambda x: x.data['priority']).data['priority']
 
-            if prio_low >= 1 and prio_low < 127:  # Lowest priority-attribute-value is less than 127
+            if prio_low >= 0 and prio_low < 127:  # Lowest priority-attribute-value is less than 127
                 # Schedule according to FP-algorithm
                 logging.debug("FP-algorithm!")
 
