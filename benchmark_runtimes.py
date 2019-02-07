@@ -1,6 +1,6 @@
 import logging
 
-import new_database as db
+import database as db
 
 
 def benchmark_runtimes():
