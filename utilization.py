@@ -39,6 +39,8 @@ def basic_utilization_test(taskset):
         # Add utilization-factor of task to total utilization
         total_utilization += task_utilization
 
+    logging.debug("utilization.py/basic_utilization_test(): total Utilization = " + str(total_utilization))
+
     # Check schedulability
     if total_utilization <= 1:  # Task-set is schedulable
         return True
@@ -79,6 +81,8 @@ def rm_utilization_test(taskset):
 
     # Calculate utilization bound for RM
     utilization_bound = len(taskset) * (2 ** (1 / len(taskset)) - 1)
+    logging.debug("utilization.py/rm_utilization_test(): Utilization bound = " + str(utilization_bound))
+    logging.debug("utilization.py/rm_utilization_test(): total Utilization = " + str(total_utilization))
 
     # Check schedulability
     if total_utilization <= utilization_bound:  # Task-set is schedulable
@@ -114,6 +118,8 @@ def hb_utilization_test(taskset):
 
         # Add utilization-factor of task to total utilization
         total_utilization *= task_utilization + 1
+
+    logging.debug("utilization.py/hb_utilization_test(): total Utilization = " + str(total_utilization))
 
     # Check schedulability
     if total_utilization <= 2:  # Task-set is schedulable

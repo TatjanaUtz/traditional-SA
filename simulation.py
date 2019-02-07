@@ -40,6 +40,7 @@ def simulate(taskset):
 
     # Calculate the hyperperiod of the tasks
     H = _lcm(periods)
+    logging.debug("simulation.py/simulate(): Hyperperiod H = " + str(H))
 
     # Define the length of simulation (= H)
     configuration.duration = H * configuration.cycles_per_ms

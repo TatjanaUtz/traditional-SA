@@ -84,14 +84,14 @@ class fp_edf_scheduler(Scheduler):  # define fp_edf_scheduler as subclass of sch
 
             if prio_low >= 0 and prio_low < 127:  # Lowest priority-attribute-value is less than 127
                 # Schedule according to FP-algorithm
-                logging.debug("FP-algorithm!")
+                #logging.debug("FP-algorithm!")
 
                 # Get the job with the lowest priority-attribute-value (i.e. the job with the highest priority)
                 job = min(self.ready_list, key=lambda x: x.data['priority'])
 
             elif prio_low == 127:  # Lowest priority-attribute-value is 127
                 # Schedule according to EDF-algorithm
-                logging.debug("EDF-algorithm!")
+                #logging.debug("EDF-algorithm!")
 
                 # Get the job with the lowest deadline-attribute-value (i.e. the job with the next deadline)
                 job = min(self.ready_list, key=lambda x: x.absolute_deadline)
