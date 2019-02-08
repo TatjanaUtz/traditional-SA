@@ -21,9 +21,12 @@ def rta_audsley(taskset):
         True/False -- schedulability of task-set
         -1 -- an error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.RTA.rta_audsley')
+
     # Check input argument: must be a TaskSet
     if not isinstance(taskset, Taskset):  # Invalid input argument
-        logging.error("RTA/RTA(): invalid input argument, must be a TaskSet!")
+        logger.error("Invalid input argument, must be a TaskSet!")
         return -1
 
     # Check schedulability of all tasks in the task-set
@@ -33,7 +36,7 @@ def rta_audsley(taskset):
 
         # Check schedulability of task
         if response_time == -1:  # an error occurred
-            logging.error("RTA/RTA(): error value returned from _calculate_response_time()")
+            logger.error("Error value returned from _calculate_response_time_audsley()")
             return -1
         elif response_time is False or response_time > taskset[i].deadline:
             # Task-set is NOT schedulable
@@ -60,20 +63,26 @@ def _caluclate_response_time_audsley(taskset, check_task):
         False -- value of response time exceeds deadline of task (= period) -> task-set is not schedulable
         -1 -- an error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.RTA._calculate_response_time_audsley')
 
     # check input arguments
     if not isinstance(taskset, Taskset) or not isinstance(check_task,
                                                           Task):  # invalid input argument
-        logging.error("RTA/_calculate_response_time(): invalid input arguments!")
+        logger.error("Invalid input arguments!")
         return -1
+
+    logger.debug("TASK " + str(check_task.id))
 
     # Create task-set with all task of higher or same priority as check_task = hp(i)
     hp = Taskset(tasks=[])
     for task in taskset:  # Iterate over all tasks
         if task.priority <= check_task.priority and task is not check_task:
             hp.add_task(task)  # Add task to hp-set
+    logger.debug("hp-set = " + str(hp))
 
     r0 = check_task.execution_time  # Start with execution time of task i
+    logger.debug("R0 = " + str(r0))
 
     # Check if there are tasks of higher or same priority
     if len(hp) == 0:  # check_task is task with highest priority
@@ -90,8 +99,10 @@ def _caluclate_response_time_audsley(taskset, check_task):
             sum_hp += math.ceil(r_old / task.period) * task.execution_time
 
         r_new = check_task.execution_time + sum_hp
+        logger.debug("R = " + str(r_new))
 
-        if r_new > check_task.period:  # Deadline miss of check_task
+        if r_new > check_task.deadline:  # Deadline miss of check_task
+            logger.debug("R > D")
             return False
 
     return r_new
@@ -110,9 +121,12 @@ def rta_buttazzo(taskset):
         True/False -- schedulability of task-set
         -1 -- an error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.RTA_rta_buttazzo')
+
     # Check input argument: must be a TaskSet
     if not isinstance(taskset, Taskset):  # Invalid input argument
-        logging.error("RTA/RTA(): invalid input argument, must be a TaskSet!")
+        logger.error("Invalid input argument, must be a TaskSet!")
         return -1
 
     # Check schedulability of all tasks in the task-set
@@ -122,7 +136,7 @@ def rta_buttazzo(taskset):
 
         # Check schedulability of task
         if response_time == -1:  # an error occurred
-            logging.error("RTA/RTA(): error value returned from _calculate_response_time()")
+            logger.error("Error value returned from _calculate_response_time_buttazzo()")
             return -1
         elif response_time is False or response_time > taskset[i].deadline:
             # Task-set is NOT schedulable
@@ -149,12 +163,16 @@ def _caluclate_response_time_buttazzo(taskset, check_task):
         False -- value of response time exceeds deadline of task (= period) -> task-set is not schedulable
         -1 -- an error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.RTA._calculate_response_time_buttazzo')
 
     # check input arguments
     if not isinstance(taskset, Taskset) or not isinstance(check_task,
                                                           Task):  # invalid input argument
-        logging.error("RTA/_calculate_response_time(): invalid input arguments!")
+        logger.error("Invalid input arguments!")
         return -1
+
+    logger.debug("TASK " + str(check_task.id))
 
     # Create task-set with all task of higher or same priority as check_task = hp(i)
     # Add the execution times of all higher or same priority tasks to R0
@@ -164,12 +182,19 @@ def _caluclate_response_time_buttazzo(taskset, check_task):
         if task.priority <= check_task.priority and task is not check_task:
             hp.add_task(task)  # Add task to hp-set
             r0 += task.execution_time
+    logger.debug("hp-set = " + str(hp))
 
     r0 += check_task.execution_time  # Add execution time of task i
+    logger.debug("R0 = " + str(r0))
 
     # Check if there are tasks of higher or same priority
     if len(hp) == 0:  # check_task is task with highest priority
         return r0  # Return response time = execution time of check_task
+
+    # Check if deadline is already exceeded
+    if r0 > check_task.deadline:  # Deadline miss of check_task
+        logger.debug("R > D")
+        return False
 
     r_old = 0
     r_new = r0
@@ -182,44 +207,13 @@ def _caluclate_response_time_buttazzo(taskset, check_task):
             sum_hp += math.ceil(r_old / task.period) * task.execution_time
 
         r_new = check_task.execution_time + sum_hp
+        logger.debug("R = " + str(r_new))
 
-        if r_new > check_task.period:  # Deadline miss of check_task
+        if r_new > check_task.deadline:  # Deadline miss of check_task
+            logger.debug("R > D")
             return False
 
     return r_new
-
-
-# def cpa(taskset):
-#     # generate a new system
-#     s = model.System()
-#
-#     # add resources (CPUs) to the system
-#     # and register the static priority preemptive scheduler
-#     r1 = s.bind_resource(model.Resource("R1", schedulers.SPPSchedulerRoundRobin()))
-#
-#     # create and bind tasks to r1
-#     # register a periodic event model for all tasks
-#     tasks = []
-#     for i in range(len(taskset)):
-#         tasks.append(r1.bind_task(model.Task(str(taskset[i].id), wcet=taskset[i].execution_time,
-#                                              scheduling_parameter=taskset[i].priority)))
-#         tasks[i].in_event_model = model.PJdEventModel(P=taskset[i].period)
-#
-#     # perform the analysis
-#     task_results = analysis.analyze_system(s)
-#
-#     # print the worst case response times (WCRTs)
-#     # check schedulability WCRT <= D
-#     for r in s.resources:
-#         i = 0
-#         for t in r.tasks:
-#             wcrt = task_results[t].wcrt
-#             deadline = taskset[i].deadline
-#             if wcrt > deadline:
-#                 return False
-#             i += 1
-#
-#     return True
 
 
 if __name__ == "__main__":

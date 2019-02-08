@@ -23,10 +23,12 @@ def simulate(taskset):
         False - the task-set is not schedulable
         -1 - an error occured
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.simulation.simulate')
 
     # Check input argument
     if taskset is None or not isinstance(taskset, Taskset):
-        logging.error("simulation.py/simulate(): Invalid input argument or no task-set given!")
+        logger.error("Invalid input argument or no task-set given!")
         return -1
 
     # Manual configuration: the configuration class stores all the details about a system
@@ -40,7 +42,7 @@ def simulate(taskset):
 
     # Calculate the hyperperiod of the tasks
     H = _lcm(periods)
-    logging.debug("simulation.py/simulate(): Hyperperiod H = " + str(H))
+    logger.debug("simulation.py/simulate(): Hyperperiod H = " + str(H))
 
     # Define the length of simulation (= H)
     configuration.duration = H * configuration.cycles_per_ms
@@ -51,7 +53,7 @@ def simulate(taskset):
     # Add the tasks to the list of tasks
     i = 1
     for task in taskset:
-        task_name = "T" + str(i)
+        task_name = "T" + str(task.id)
         activation_dates = _get_activation_dates(H, task.period, task.number_of_jobs)
         configuration.add_task(name=task_name, identifier=i, task_type="Sporadic",
                                period=task.period, activation_date=0, wcet=task.execution_time,
@@ -80,10 +82,8 @@ def simulate(taskset):
         # print(task.name + ":")
         for job in task.jobs:
             if job.aborted:  # deadline miss
-                # print("{0:s} Deadline miss".format(job.name))
+                logger.debug("simulation.py/simulate(): {0:s} Deadline miss".format(job.name))
                 return False
-            # else:
-                # print("{0:s} ok".format(job.name))
 
     return True
 

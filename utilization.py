@@ -16,10 +16,12 @@ def basic_utilization_test(taskset):
     True/False -- schedulabilty of task-set
     -1 -- error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.utilization.basic_utilization_test')
+
     # Check input argument
     if taskset is None or not isinstance(taskset, Taskset):
-        logging.error(
-            "utilization.py/basic_utilization_test(): invalid taskset!")
+        logger.error("Invalid taskset!")
         return -1
 
     total_utilization = 0  # Reset total utilization
@@ -39,7 +41,8 @@ def basic_utilization_test(taskset):
         # Add utilization-factor of task to total utilization
         total_utilization += task_utilization
 
-    logging.debug("utilization.py/basic_utilization_test(): total Utilization = " + str(total_utilization))
+    logger.debug(
+        "utilization.py/basic_utilization_test(): total Utilization = " + str(total_utilization))
 
     # Check schedulability
     if total_utilization <= 1:  # Task-set is schedulable
@@ -63,10 +66,12 @@ def rm_utilization_test(taskset):
     True/False -- schedulabilty of task-set
     -1 -- error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.utilization.rm_utilization_test')
+
     # Check input argument
     if taskset is None or not isinstance(taskset, Taskset):
-        logging.error(
-            "utilization.py/rm_utilization_test(): invalid task-set!")
+        logger.error("Invalid task-set!")
         return -1
 
     total_utilization = 0  # Reset total utilization
@@ -81,8 +86,8 @@ def rm_utilization_test(taskset):
 
     # Calculate utilization bound for RM
     utilization_bound = len(taskset) * (2 ** (1 / len(taskset)) - 1)
-    logging.debug("utilization.py/rm_utilization_test(): Utilization bound = " + str(utilization_bound))
-    logging.debug("utilization.py/rm_utilization_test(): total Utilization = " + str(total_utilization))
+    logger.debug("Utilization bound = " + str(utilization_bound))
+    logger.debug("Total Utilization = " + str(total_utilization))
 
     # Check schedulability
     if total_utilization <= utilization_bound:  # Task-set is schedulable
@@ -103,23 +108,25 @@ def hb_utilization_test(taskset):
     True/False -- schedulabilty of task-set
     -1 -- error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.utilization_hb_utilization_test')
+
     # Check input argument
     if taskset is None or not isinstance(taskset, Taskset):
-        logging.error(
-            "utilization.py/hb_utilization_test(): invalid task-set!")
+        logger.error("Invalid task-set!")
         return -1
 
-    total_utilization = 0  # Reset total utilization
+    total_utilization = 1  # Reset total utilization
 
     # Iterate over all tasks
     for task in taskset:
         # Calculate utilization-factor of task
-        task_utilization = task.execution_time / task.period
+        task_utilization = (task.execution_time / task.period) + 1
 
         # Add utilization-factor of task to total utilization
-        total_utilization *= task_utilization + 1
+        total_utilization *= task_utilization
 
-    logging.debug("utilization.py/hb_utilization_test(): total Utilization = " + str(total_utilization))
+    logger.debug("Total Utilization = " + str(total_utilization))
 
     # Check schedulability
     if total_utilization <= 2:  # Task-set is schedulable
