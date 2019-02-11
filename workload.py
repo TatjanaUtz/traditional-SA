@@ -3,7 +3,6 @@ import math
 
 from Task import Task
 from Taskset import Taskset
-from utilization import basic_utilization_test
 
 
 def _get_scheduling_points(hp_taskset, check_task):
@@ -22,14 +21,15 @@ def _get_scheduling_points(hp_taskset, check_task):
         list with scheduling points
         -1 -- an error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.workload._get_scheduling_points')
+
     # Check input arguments
     if not isinstance(hp_taskset, Taskset):  # invalid input argument for hp_taskset
-        logging.error(
-            "workload.py/_get_scheduling_points(): invalid input argument for hp_taskset (must be Taskset)!")
+        logger.error("Invalid input argument for hp_taskset (must be Taskset)!")
         return -1
     if not isinstance(check_task, Task):  # invalid input argument for check_task
-        logging.error(
-            "workload.py/_get_scheduling_points(): invalid input argument for check_task (must be Task)!")
+        logger.error("Invalid input argument for check_task (must be Task)!")
         return -1
 
     # Create empty list of scheduling points
@@ -47,10 +47,6 @@ def _get_scheduling_points(hp_taskset, check_task):
                 scheduling_points.append(new_scheduling_point)
             k += 1
 
-    # Add deadline of check_task to scheduling points
-    if check_task.deadline not in scheduling_points:
-        scheduling_points.append(check_task.deadline)
-
     # Sort scheduling points according to increasing values
     scheduling_points.sort()
 
@@ -65,18 +61,21 @@ def _W_i(t, taskset):
 
     Args:
         t -- scheduling point
-        taskset -- task-set with all tasks that should be considered for calculation (tau_i and all
+        taskset -- task-set with all tasks that should be considered for calculation (= tau_i and all
                    tasks with higher priority)
     Return:
-        the workload of the given task-set
+        the workload of the given task-set at scheduling point t
         -1 -- an error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.workload._W_i')
+
     # Check input arguments
     if not isinstance(t, int):  # invalid input argument for t
-        logging.error("workload.py/W_i(): invalid input argument for t (must be int)!")
+        logger.error("Invalid input argument for t (must be int)!")
         return -1
     if not isinstance(taskset, Taskset):  # invalid input argument for taskset
-        logging.error("workload.py/W_i(): invalid input argument for taskset (must be Taskset)!")
+        logger.error("Invalid input argument for taskset (must be Taskset)!")
         return -1
 
     # Calculate workload
@@ -84,51 +83,47 @@ def _W_i(t, taskset):
     for task in taskset:
         w_i += math.ceil(t / task.period) * task.execution_time
 
+    logger.debug("W_i({}) = {}".format(t, w_i))
+
     return w_i
 
 
-def _L_i_bool(scheduling_points, taskset):
-    """Calculate L_i.
+def _L_i(t, taskset):
+    """Calculate L_i(t).
 
-    This method calculates L_i according to the following formula:
-    L_i = min_(t element S_i) { W_i(t) / t }
-    The method stops if for any t the condition L_i <= 1 is fulfilled.
+    This method calculates L_i(t) according to the following formula:
+    L_i(t) = W_i(t) / t
 
     Args:
-        scheduling_points -- time points for which the schedulability should be tested
-        taskset -- task-set with all relevant tasks (tau_i and all tasks with higher priority)
+        t -- scheduling point
+        taskset -- task-set with all relevant tasks (= tau_i and all tasks with higher priority)
     Return:
-        True/False -- result of condition L_i <= 1
+        L_i(t)
         -1 -- an error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.workload._L_i')
+
     # Check input arguments
-    if not isinstance(scheduling_points, list):  # invalid input argument for scheduling_points
-        logging.error(
-            "workload.py/_L_i_bool(): invalid input argument for scheduling_points (must be list)!")
+    if not isinstance(t, int):  # invalid input argument for t
+        logger.error("Invalid input argument for t (must be int)!")
         return -1
     if not isinstance(taskset, Taskset):  # invalid input argument for taskset
-        logging.error(
-            "workload.py/_L_i_bool(): invalid input argument for taskset (must be Taskset)!")
+        logger.error("Invalid input argument for taskset (must be Taskset)!")
         return -1
 
-    # Iterate over all scheduling points
-    for t in scheduling_points:
+    # Calculate L_i(t)
+    l_i = _W_i(t, taskset) / t
 
-        # Calculate W_i(t)
-        w_i = _W_i(t, taskset)
+    logger.debug("L_i({}) = {}".format(t, l_i))
 
-        # Check if W_i(t) / t <= 1
-        if (w_i / t) <= 1:  # for a value of t the condition W_i(t) / t <= 1 is fulfilled
-            return True
-
-    # No value of t found for which W_i(t) / t <= 1
-    return False
+    return l_i
 
 
-def workload_test_LSD(taskset):
+def rm_workload_test(taskset):
     """Workload test.
 
-    This method implements the workload test according to Lehoczky, Sha, Ding 1989.
+    This method implements the workload test according to Lehoczky, Sha, Ding 1989 for RM scheduler and D = T.
     A task-set is schedulable if for every task tau_i: L_i <= 1.
     Lehoczky, Sha, Ding 1989: The Rate Monotonic Scheduling Algorithm: Exact Characterization And
                               Average Case Behavior
@@ -139,147 +134,151 @@ def workload_test_LSD(taskset):
         True/False -- schedulability of the task-set
         -1 -- an error occurred
     """
+    # create logger
+    logger = logging.getLogger('traditional-SA.workload.rm_workload_test')
+
     # Check input argument
     if not isinstance(taskset, Taskset):  # invalid input argument
-        logging.error(
-            "workload.py/workload_test_LSD(): invalid input argument for taskset (must be Taskset)!")
+        logger.error("Invalid input argument for taskset (must be Taskset)!")
         return -1
 
-    # Perform basic utilization test
-    if basic_utilization_test(taskset) == False:
-        # Utilization > 1: task-set is NOT schedulable!
-        logging.debug("workload.py/workload_test_LSD(): task-set is NOT schedulable (U > 1)!")
-        return False
-
-    # Iterate over all tasks and check schedulability of each task
+    # Iterate over all tasks and check schedulability of tasks
+    # The task-set is schedulable if L = max(L_i) <= 1
+    # This means that if all tasks are schedulable, the task-set is also schedulable and the other way round
     for check_task in taskset:
+        logger.debug("TASK {}".format(check_task.id))
 
         # Generate task-set with all higher priority tasks and check_task
         hp_taskset = Taskset(tasks=[])
         for task in taskset:
             if task.priority <= check_task.priority:
                 hp_taskset.add_task(task)
+        logger.debug("hp-set = " + str(hp_taskset))
 
         # Get scheduling points
         scheduling_points = _get_scheduling_points(hp_taskset, check_task)
+        logger.debug("Scheduling points = " + str(scheduling_points))
 
-        # Check schedulability of check_task: schedulable if L_i <= 1
-        l_i = _L_i_bool(scheduling_points, hp_taskset)
-        if l_i == False:  # check_task is NOT schedulable --> task-set is NOT schedulable
-            logging.debug(
-                "workload.py/workload_test_LSD(): task-set is NOT schedulable (L_{} > 1)!".format(
-                    check_task.id))
+        # Iterate over all scheduling points and calculate L_i(t)
+        # A task is schedulable if L_i = min(L_i(t)) <= 1
+        # This means that if at least for one scheduling point L_i(t) <= 1 the task is schedulable
+        for t in scheduling_points:
+            l_i = _L_i(t, hp_taskset)
+            if l_i <= 1:  # task is schedulable, stop iteration and check next task in task-set
+                logger.debug("L_i({}) <= 1 -> task schedulable".format(t))
+                break
+        else:  # the condition was not meet for any scheduling pint: task is not schedulable -> task-set is not schedulable
+            logger.debug("Task is not schedulable -> Task-set is not schedulable")
             return False
-
-    # All tasks are schedulable --> task-set is schedulable
-    logging.debug("workload.py/workload_test(): task-set is schedulable!")
-    return True
-
-
-def _W_m_bool(k, x, hp_taskset, tau_m):
-    """Calculate W_m.
-
-    This method calculates W_m according to the following formula:
-    W_m(k, x) = min_(t <= x) { (sum_from(j=1)_to(m-1) C_j lceil(t / T_j)rceil + kC_m) / t }
-    The numerator of the fraction gives the total cumulative processor demands made by all jobs of
-    tau_1, ..., tau_m-1 and the first job of tau_m during [0, t].
-    The method stops if for any t the condition W_m(k, x) <= 1 is fulfilled.
-
-    Args:
-        k -- number of jobs that must be considered for tau_m
-        x -- interval that should be checked
-        hp_taskset -- task-set with all tasks with higher priority than tau_m
-    Return:
-        True/False -- result of condition W_m <= 1
-    """
-    if not isinstance(k, int) or not isinstance(x, int):  # invalid input argument for k or x
-        logging.error("workload.py/_W_m_bool(): invalid input argument for k or x (must be int)!")
-        return -1
-    if not isinstance(hp_taskset, Taskset):  # invalid input argument for hp_taskset
-        logging.error(
-            "workload.py/_W_m_bool(): invalid input argument for hp_taskset (must be Taskset)!")
-        return -1
-    if not isinstance(tau_m, Task):  # invalid input argument for tau_m
-        logging.error("workload.py,/_W_m_bool(): invalid input argument for tau_m (must be Task)!")
-        return -1
-
-    # Generate list with all possible values of t that must be checked:
-    # start with tau_m.execution_time and go to x
-    t_values = [i for i in range(int(tau_m.execution_time), x + 1)]
-
-    # Iterate over all values of t and check if for any value of t W_m is <= 1
-    for t in t_values:
-        w_m = 0
-        # Iterate over all tasks with higher priority than tau_m
-        for task in hp_taskset:
-            w_m += task.execution_time * math.ceil(t / task.period)
-
-        # Add execution time of tau_m and divide by t
-        w_m = (w_m + k * tau_m.execution_time) / t
-
-        # Check if w_m <= 1
-        if w_m <= 1:  # for a value of t the condition W_m <= 1 is fulfilled
-            return True
-
-    # No value of t found for which W_m is <= 1
-    return False
+    else:  # all tasks are schedulable -> task-set is schedulable
+        logger.debug("All tasks are schedulable -> Task-set is schedulable")
+        return True
 
 
-def workload_test(taskset):
-    """Workload test.
+_last_psi = []
+_last_workload = []
 
-    This method implements the workload test according to Lehoczky 1990, but for task with D_i <= T_i.
-    So only the first job of every task must meet its deadline.
-    A task-set is schedulable if for every task tau_m: W_m(1, Dm) <= 1 and W_m(1, T_m) <= 1.
-    Lehoczky 1990: Fixed Priority Scheduling of Periodic Task Sets with Arbitrary Deadlines
+
+def _W_i_het(i, b, taskset):
+    """Calculate workload.
+    This method calculates the workload of a task tau_i for its deadline T_i.
+    W_[i-1](T_i) = min( sum( ceil(t / T_j) * C_j ) + (T_i - t) )
+    The minimum is built over all scheduling points t.
+    Implementation according to [BB01].
 
     Args:
-        taskset -- the task-set that should be tested for schedulability
+        i -- position of the task in the task-set
+        b -- the period of the task
     Return:
-        True/False -- schedulability of the task-set
+        the workload of the given task-set at T_i
         -1 -- an error occurred
     """
-    # Check input argument
-    if not isinstance(taskset, Taskset):  # invalid input argument
-        logging.error(
-            "workload.py/workload_test(): invalid input argument for taskset (must be Taskset)!")
+    # create logger
+    logger = logging.getLogger('traditional-SA.workload._W_i_het')
+
+    # Check input arguments
+    if not isinstance(i, int) or i > len(taskset):  # invalid input argument for i
+        logger.error("Invalid input argument for i (must be int and in taskset)!")
+        return -1
+    if not isinstance(b, int):  # invalid input argument for D_i
+        logger.error("Invalid input argument for b (must be int)!")
+        return -1
+    if not isinstance(taskset, Taskset):  # invalid input argument for taskset
+        logger.error("Invalid input argument for taskset (must be Taskset)!")
         return -1
 
-    # Perform basic utilization test
-    if basic_utilization_test(taskset) == False:
-        # Utilization > 1: task-set is NOT schedulable!
-        logging.debug("workload.py/workload_test(): Task-set is NOT schedulable (U > 1)!")
-        return False
+    if i <= 0:  # W_0(T_1) = 0
+        return 0
 
-    # Iterate over all tasks and check schedulability of each task
-    for check_task in taskset:
+    global _last_psi, _last_workload
+    if b <= _last_psi[i]:  # if W(i, b) already computed
+        logger.debug("W({}, {}) already computed".format(i, b))
+        return _last_workload[i]  # don't go further
 
-        # Generate task-set with all higher priority tasks
-        hp_taskset = Taskset(tasks=[])
-        for task in taskset:
-            if task.priority <= check_task.priority and task is not check_task:
-                hp_taskset.add_task(task)
+    f = math.floor(b / taskset[i - 1].period)
+    c = math.ceil(b / taskset[i - 1].period)
+    logger.debug("f = {} \t c = {}".format(f, c))
 
-        # Check schedulability of check_task: schedulable if
-        # W_m(1, D_m) <= 1 and
-        # W_m(1, T_m) <= 1
-        w_m_d = _W_m_bool(1, check_task.deadline, hp_taskset, check_task)
-        if w_m_d == False:  # check_task is NOT schedulable --> task-set is NOT schedulable
-            logging.debug((
-                "workload.py(workload_test(): Task-set is NOT schedulable (W_{} > 1)".format(
-                    check_task.id)))
+    branch0 = b - f * (taskset[i - 1].period - taskset[i - 1].execution_time) + _W_i_het(i - 1, f *
+                                                                                         taskset[
+                                                                                             i - 1].period,
+                                                                                         taskset)
+    branch1 = c * taskset[i - 1].execution_time + _W_i_het(i - 1, b, taskset)
+    logger.debug("branch0 = {} \t branch1 = {}".format(branch0, branch1))
+
+    _last_psi[i] = b
+    _last_workload[i] = min(branch0, branch1)
+
+    return _last_workload[i]
+
+
+def het_workload_test(taskset):
+    """Hyperplanes Exact Test (HET).
+
+    A task-set is schedulable if for all tasks C_i + W_[i-1](T_i) <= T_i is fullfilled.
+    Implementation according to [BB01].
+
+    Args:
+    taskset -- the task-set that should be tested for schedulability
+    Return:
+    True/False -- schedulability of the task-set
+    -1 -- an error occurred
+    """
+    # create logger
+    logger = logging.getLogger('traditional-SA.workload.het_workload_test')
+
+    # Check input argument
+    if not isinstance(taskset, Taskset):  # invalid input argument
+        logger.error("Invalid input argument for taskset (must be Taskset)!")
+        return -1
+
+    # clear list with already computed workload values
+    global _last_psi, _last_workload
+    _last_psi = [0 for x in range(len(taskset))]
+    _last_workload = [0 for x in range(len(taskset))]
+
+    # iterate over all tasks in the task-set
+    for i in range(1, len(taskset) + 1):
+        logger.debug("TASK {}".format(taskset[i - 1].id))
+
+        # calculate W_[i-1](T_i)
+        w = _W_i_het(i - 1, taskset[i - 1].period, taskset)
+        logger.debug("W_{}({}) = {}".format(i - 1, taskset[i - 1].period, w))
+
+        # add computation time of check_task
+        sum = taskset[i - 1].execution_time + w
+        logger.debug("Summe = {}".format(sum))
+
+        # check schedulability condition: C_i + W_[i-1](T_i) <= T_i
+        if sum > taskset[i - 1].deadline:  # task is NOT schedulable
+            logger.debug("Task is not schedulable -> Task-set is not schedulable")
             return False
+        else:  # task is schedulable
+            logger.debug("Task is schedulable")
 
-        w_m_t = _W_m_bool(1, check_task.period, hp_taskset, check_task)
-        if w_m_t == False:  # one more job of check_task must be considered!
-            logging.error(
-                "workload.py/workload_test(): one more job of task {} must be considered (W_m_t > 1)!".format(
-                    check_task.id))
-            return False
-
-    # All tasks are schedulable --> task-set is schedulable
-    logging.debug("workload.py/workload_test(): task-set is schedulable!")
-    return True
+    else:  # all tasks are schedulable -> task-set is schedulable
+        logger.debug("All tasks are schedulable -> Task-set is schedulable")
+        return True
 
 
 if __name__ == "__main__":

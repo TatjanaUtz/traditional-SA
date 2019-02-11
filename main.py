@@ -21,14 +21,14 @@ valid_SA = [simulation.simulate,  # Simulation
             utilization.hb_utilization_test,  # Utilization test with Hyperbolic Bound
             RTA.rta_audsley,  # RTA according to Audsley
             RTA.rta_buttazzo,  # RTA according to Buttazzo
-            workload.workload_test,  # Workload test for D > T
-            workload.workload_test_LSD]  # Workload test for D <= T
+            workload.rm_workload_test,  # Workload test for RM
+            workload.het_workload_test]  # HET workload test
 
 # Select if the results should be printed to a file (True) or not (False)
 output_to_file = True
 
 # Name of the output file for results
-file_name = "results_2"
+file_name = "results"
 
 
 def start_logging():
@@ -39,24 +39,24 @@ def start_logging():
     """
     # create logger with 'main'
     logger = logging.getLogger('traditional-SA')
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
     # create file handler which logs error messages
     fh = logging.FileHandler('error.log', mode='w+')
     fh.setLevel(logging.ERROR)
 
     # create console handler with a lower log level
-    # ch = logging.StreamHandler()
-    # ch.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
 
     # create formatter and add it to the handlers
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
-    # ch.setFormatter(formatter)
+    ch.setFormatter(formatter)
 
     # add the handlers to the logger
     logger.addHandler(fh)
-    # logger.addHandler(ch)
+    logger.addHandler(ch)
 
     # return logger
     return logger
@@ -229,7 +229,7 @@ def read_input():
 
             # Add the corresponding tests to the to-do list
             tests_todo.append(workload.workload_test)
-            tests_todo.append(workload.workload_test_LSD)
+            tests_todo.append(workload.rm_workload_test)
 
     if len(tests_todo) == 0:
         logger.info("Doing nothing...\n")
