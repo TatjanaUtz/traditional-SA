@@ -81,7 +81,7 @@ def simulate(taskset):
     for task in model.results.tasks:
         # print(task.name + ":")
         for job in task.jobs:
-            if job.aborted:  # deadline miss
+            if job.exceeded_deadline:  # deadline miss
                 logger.debug("simulation.py/simulate(): {0:s} Deadline miss".format(job.name))
                 return False
 
@@ -148,13 +148,3 @@ def _gcd(*numbers):
     """
     from math import gcd
     return reduce(gcd, numbers)
-
-
-if __name__ == "__main__":
-    # Configure logging: format should be "LEVELNAME: Message",
-    # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.ERROR)
-
-    # Open the SimSo GUI
-    # import simsogui
-    # simsogui.run_gui()

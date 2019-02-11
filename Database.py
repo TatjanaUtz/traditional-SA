@@ -129,7 +129,7 @@ def get_dataset():
         return None
 
     # Limit number of rows
-    #rows = rows[:100]
+    rows = rows[:100]
 
     # iterate over all rows
     for row in rows:
@@ -444,6 +444,9 @@ def read_execution_times():
         min_C = row[1]
         max_C = row[2]
         average_C = row[3]
+        
+        # TODO: delete rounding
+        average_C = math.ceil(average_C)
 
         # split pkg and arg and create dictionary entry
         if '(' in pkg_arg:  # string contains pkg and arg
