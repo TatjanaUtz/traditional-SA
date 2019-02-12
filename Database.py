@@ -129,7 +129,7 @@ def get_dataset():
         return None
 
     # Limit number of rows
-    rows = rows[:100]
+    #rows = rows[555510:556510] + rows[705519:706519]
 
     # iterate over all rows
     for row in rows:

@@ -28,7 +28,7 @@ valid_SA = [simulation.simulate,  # Simulation
 output_to_file = True
 
 # Name of the output file for results
-file_name = "results"
+file_name = "results_after_correcting"
 
 
 def start_logging():

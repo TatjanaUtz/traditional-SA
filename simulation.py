@@ -81,7 +81,7 @@ def simulate(taskset):
     for task in model.results.tasks:
         # print(task.name + ":")
         for job in task.jobs:
-            if job.exceeded_deadline:  # deadline miss
+            if job.aborted:  # deadline miss
                 logger.debug("simulation.py/simulate(): {0:s} Deadline miss".format(job.name))
                 return False
 
