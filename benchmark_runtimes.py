@@ -1,3 +1,8 @@
+"""Module to benchmark runtimes of tasks.
+
+All successfully ran jobs from the database are read. For each task the maximum, minimum and average
+execution times are calculated and saved to the database.
+"""
 import logging
 
 import database as db
@@ -9,7 +14,10 @@ def benchmark_runtimes():
     Reads all jobs of all tasks from the database and calculates the minimum, maximum and average
     execution time of each task defined by PKG and for each combination of PKG and arg.
     """
-    logging.debug("benchmark_runtimes.py/benchmark_runtimes(): Starting to benchmark runtimes...")
+    # create logger
+    logger = logging.getLogger('traditional-SA.benchmark_runtimes.benchmark_runtimes')
+
+    logger.debug("Starting to benchmark runtimes...")
 
     # Get all tasks from the database
     task_list = db.get_all_tasks()
@@ -26,7 +34,7 @@ def benchmark_runtimes():
             task_dict[(task.pkg, task.arg)] = []  # add (pkg, arg)
 
         # get execution times of all jobs of the current task
-        job_list = db.get_jobs_C(task.id)
+        job_list = db.get_jobs_c(task.id)
 
         # add execution times to the dictionary
         if job_list is not -1:  # at least one job was found
@@ -38,14 +46,14 @@ def benchmark_runtimes():
 
     # iterate over all dictionary keys
     for key in task_dict:
-        if len(task_dict[key]) > 0:  # at least one execution time was found
-            min_C = min(task_dict[key])  # calculate minimum execution time
-            max_C = max(task_dict[key])  # calculate maximum execution time
-            average_C = sum(task_dict[key]) / len(
+        if task_dict[key]:  # at least one execution time was found
+            min_c = min(task_dict[key])  # calculate minimum execution time
+            max_c = max(task_dict[key])  # calculate maximum execution time
+            average_c = sum(task_dict[key]) / len(
                 task_dict[key])  # calculate average execution time
 
             # save calculated values
-            task_dict[key] = (min_C, max_C, average_C)
+            task_dict[key] = (min_c, max_c, average_c)
         else:  # no execution time was found: delete key from dictionary
             delete_keys.append(key)
 
@@ -53,14 +61,12 @@ def benchmark_runtimes():
     for key in delete_keys:
         del task_dict[key]
 
-    logging.debug(
-        "benchmark_runtimes.py/benchmark_runtimes(): saving calculated execution times to database...")
+    logger.debug("Saving calculated execution times to database...")
 
     # save execution times to database
     db.save_execution_times(task_dict)
 
-    logging.debug(
-        "benchmark_runtimes.py/benchmark_runtimes(): saving successful! Benchmark finished!")
+    logger.debug("Saving successful! Benchmark finished!")
 
 
 if __name__ == "__main__":

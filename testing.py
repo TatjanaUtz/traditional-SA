@@ -12,10 +12,10 @@ logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
 db.read_execution_times()
 
-taskset_46429 = db.get_taskset(id=46429)
+taskset_46429 = db.get_taskset(taskset_id=46429)
 print(het_workload_test(taskset_46429))
 
-taskset_563782 = db.get_taskset(id=563782)
+taskset_563782 = db.get_taskset(taskset_id=563782)
 print(het_workload_test(taskset_563782))
 
 
