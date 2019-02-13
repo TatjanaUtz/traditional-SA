@@ -1,23 +1,14 @@
-"""For the new database 'panda_v1'."""
+"""Class and functions for database connectivity."""
 import logging  # for logging
 import math  # for ceil-function
-import os
+import os  # for current directory dir
 import sqlite3  # for working with the database
 
 from Task import Task  # for creating tasks
 from Taskset import Taskset  # for creating task-sets
 
-# attributes of the database
-db_dir = os.path.dirname(
-    os.path.abspath(__file__))  # path to the database = current working directory
-db_name = "panda_v2.db"  # name of the database
-
-_db_connection = None  # connection to the database
-_db_cursor = None  # cursor for working with the database
-_current_taskset = 0  # index of next un-read task-set
-
 # task execution times
-_execution_time = {
+EXECUTION_TIME_DICT = {
     ("hey", 0): (1045, 1045, 1045),
     ("hey", 1000): (1094, 1094, 1094),
     ("hey", 1000000): (1071, 1071, 1071),
@@ -54,202 +45,237 @@ _execution_time = {
     "tumatmul": (2090, 2090, 2090)
 }
 
-# Which type of execution time should be used?
-# 0: minimum execution time (BCET, best case execution time)
-# 1: maximum execution time (WCET, worst case execution time)
-# 2: average execution time
-_C_Type = 2
 
+class Database:
+    """Class representing a database.
 
-# Open database
-def open_DB():
-    """Open the database.
-
-    If the database can be found, a connection and cursor is created and saved.
-    If there is no database file defined through db_dir and db_name,
-    an error message is printed.
-    """
-    global db_name
-    db_path = db_dir + "\\" + db_name
-
-    # Check if database exists
-    if os.path.exists(db_path):  # database exists
-        global _db_connection, _db_cursor
-        _db_connection = sqlite3.connect(db_path)
-        _db_cursor = _db_connection.cursor()
-    else:  # database does not exist
-        logging.error("new_database/open_DB(): Database '" + db_name + "' not found!")
-
-
-# Close database
-def close_DB():
-    """Close the database.
-
-    If the database is open, the changes are saved before the database is closed.
-    """
-    global _db_connection, _db_cursor
-    if _db_connection is not None:  # database is open
-        _db_connection.commit()
-        _db_connection.close()
-        _db_connection = None
-        _db_cursor = None
-    else:  # database is already closed
-        logging.debug("new_database/close_DB(): No open database!")
-
-
-# Get dataset
-def get_dataset():
-    """Get a dataset.
-
-    Reads all task-sets from the database.
-    Return values:
-        list with task-sets as Taskset-Objects
-        None -- dataset is empty
-        -1 -- an error occurred
+    The database is defined by following attributes:
+        db_dir -- path to the database file (*.db)
+        db_name -- name of the database file (incl. .db)
+    Also following settings are saved within the class:
+        round_execution_time -- saves if execution times should be rounded (True) or not (False)
+        c_type -- value representing which execution time type should be used
     """
 
-    # Open database if not connected
-    global _db_connection, _db_cursor
-    if _db_connection is None or _db_cursor is None:
-        open_DB()
+    # constructor
+    def __init__(self):
 
-    # Read execution times from the database
-    read_execution_times()
+        # path to the database = current working directory
+        self.db_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Read all task-sets from the database
-    _db_cursor.execute("SELECT * FROM TaskSet")
-    rows = _db_cursor.fetchall()
+        # name of the database
+        self.db_name = "panda_v2.db"
 
-    close_DB()  # close database
+        # round up execution time to next higher int -> little bit faster
+        self.round_execution_time = True
 
-    dataset = []  # create empty list
+        # Which type of execution time should be used?
+        # 0: minimum execution time (BCET, best case execution time)
+        # 1: maximum execution time (WCET, worst case execution time)
+        # 2: average execution time
+        self.c_type = 2
 
-    if len(rows) == 0:  # dataset is empty
-        logging.debug("new_database/get_dataset(): the dataset is empty!")
-        return None
+        # connection to the database
+        self.db_connection = None
 
-    # Limit number of rows
-    #rows = rows[555510:556510] + rows[705519:706519]
+        # cursor for working with the database
+        self.db_cursor = None
 
-    # iterate over all rows
-    for row in rows:
-        id = row[0]
-        result = row[1]
-        task_ids = row[2:]
+        # dictionary with execution times of all tasks
+        self.execution_time_dict = EXECUTION_TIME_DICT
 
-        # Create empty task-set
-        new_taskset = Taskset(id=id, result=result, tasks=[])
+    # Open database
+    def open_db(self):
+        """Open the database.
 
-        # iterate over all tasks and create task-set
-        for task_id in task_ids:
-            if task_id != -1:  # valid task-id
-                new_task = get_task(task_id)  # get task from database
-                new_taskset.add_task(new_task)  # add task to task-set
+        If the database can be found, a connection and cursor is created and saved.
+        If there is no database file defined through dir and name, an error message is printed.
+        """
+        # create logger
+        logger = logging.getLogger('traditional-SA.database.open_DB')
 
-        # Add task-set to dataset
-        dataset.append(new_taskset)
+        db_path = self.db_dir + "\\" + self.db_name
 
-    # return created dataset
-    return dataset
+        # Check if database exists
+        if os.path.exists(db_path):  # database exists
+            self.db_connection = sqlite3.connect(db_path)
+            self.db_cursor = self.db_connection.cursor()
+        else:  # database does not exist
+            logger.error("Database '%s' not found!", self.db_name)
 
+    # Close database
+    def close_db(self):
+        """Close the database.
 
-# Get task-set
-def get_taskset(id):
-    """Get a task-set.
+        If the database is open, the changes are saved before the database is closed.
+        """
+        # create logger
+        logger = logging.getLogger('traditional-SA.database.close_DB')
 
-    If no arguments are given, the task-set at index _current_taskset is returned.
-    Input arguments:
-        idx -- index of the task-set, corresponds to id of task-set (column Set-ID)
-    Return value:
-        the task-set
-        None -- no more task-set available
-        -1 -- an error occurred
-    """
+        if self.db_connection is not None:  # database is open
+            self.db_connection.commit()
+            self.db_connection.close()
+            self.db_connection = None
+            self.db_cursor = None
+        else:  # database is already closed
+            logger.debug("No open database!")
 
-    # Check input argument - must be a positive integer number
-    if not isinstance(id, int) or id < 0:  # invalid input
-        logging.error(
-            "new_database/get_taskset(): invalid input argument - must be an positive int!")
-        return -1
+    # Get dataset
+    def get_dataset(self):
+        """Get a dataset.
 
-    # Open database if not connected
-    global _db_connection, _db_cursor
-    if _db_connection is None or _db_cursor is None:
-        open_DB()
+        Reads all task-sets from the database.
+        Return values:
+            list with task-sets as Taskset-Objects
+            None -- dataset is empty
+            -1 -- an error occurred
+        """
+        # create logger
+        logger = logging.getLogger('traditional-SA.database.get_dataset')
 
-    # Read the task-set from the database
-    _db_cursor.execute("SELECT * FROM TaskSet WHERE Set_ID = ?", (id,))
-    row = _db_cursor.fetchall()
+        # Open database if not connected
+        if self.db_connection is None or self.db_cursor is None:
+            self.open_db()
 
-    close_DB()  # close database
+        # Read execution times from the database
+        self.read_execution_times()
 
-    if len(row) == 0:  # no task-set with Set_ID = id found
-        logging.debug("new_database/get_taskset(): no task-set with ID = " + str(id) + " found!")
-        return None
-    elif len(row) > 1:  # more than one task-set with Set_ID = id found
-        logging.error(
-            "new_database/get_taskset(): something went wrong - more than one task-set with ID = " + str(
-                id) + " found")
-        return -1
-    else:  # one task-set was found
-        # Extract task-set attributes
-        id = row[0][0]
+        # Read all task-sets from the database
+        self.db_cursor.execute("SELECT * FROM TaskSet")
+        rows = self.db_cursor.fetchall()
+
+        self.close_db()  # close database
+
+        dataset = []  # create empty list
+
+        if not rows:  # dataset is empty
+            logger.debug("The dataset is empty!")
+            return None
+
+        # Limit number of rows
+        # rows = rows[555510:556510] + rows[705519:706519]
+        # rows = rows[:100]
+
+        # iterate over all rows
+        for row in rows:
+            taskset_id = row[0]
+            result = row[1]
+            task_ids = row[2:]
+
+            # Create empty task-set
+            new_taskset = Taskset(id=taskset_id, result=result, tasks=[])
+
+            # iterate over all tasks and create task-set
+            for task_id in task_ids:
+                if task_id != -1:  # valid task-id
+                    new_task = self.get_task(task_id)  # get task from database
+                    new_taskset.add_task(new_task)  # add task to task-set
+
+            # Add task-set to dataset
+            dataset.append(new_taskset)
+
+        # return created dataset
+        return dataset
+
+    # Get task-set
+    def get_taskset(self, taskset_id=0):
+        """Get a task-set.
+
+        Read a task-set from the database. If no id is given, the first task-set is returned.
+
+        Input arguments:
+            taskset_id -- index of the task-set, corresponds to id of task-set (column Set-ID)
+        Return value:
+            the task-set
+            None -- no task-set with given id found
+            -1 -- an error occurred
+        """
+        # create logger
+        logger = logging.getLogger('traditional-SA.database.get_taskset')
+
+        # Check input argument - must be a positive integer number
+        if not isinstance(taskset_id, int) or taskset_id < 0:  # invalid input
+            logger.error("Invalid input argument - must be an positive int!")
+            return -1
+
+        # Open database if not connected
+        if self.db_connection is None or self.db_cursor is None:
+            self.open_db()
+
+        # Read the task-set from the database
+        self.db_cursor.execute("SELECT * FROM TaskSet WHERE Set_ID = ?", (taskset_id,))
+        row = self.db_cursor.fetchall()
+
+        self.close_db()  # close database
+
+        if not row:  # no task-set with Set_ID = id found
+            logger.debug("No task-set with ID = %d found!", taskset_id)
+            return None
+
+        if len(row) > 1:  # more than one task-set with Set_ID = id found
+            logger.error("Something is wrong - more than one task-set with ID = %d found",
+                         taskset_id)
+            return -1
+
+        # one task-set was found: extract task-set attributes
+        taskset_id = row[0][0]
         result = row[0][1]
         task_ids = row[0][2:]
 
         # Create empty task-set
-        new_taskset = Taskset(id=id, result=result, tasks=[])
+        new_taskset = Taskset(id=taskset_id, result=result, tasks=[])
 
         # Iterate over all tasks and create task-set
         for task_id in task_ids:
             if task_id != -1:  # Valid task-id
-                new_task = get_task(task_id)  # get task from database
+                new_task = self.get_task(task_id)  # get task from database
                 new_taskset.add_task(new_task)  # add task to task-set
 
         # return created task-set
         return new_taskset
 
+    # Get task
+    def get_task(self, task_id):
+        """Read a task from the database.
 
-# Get task
-def get_task(id):
-    """Read a task from the database.
+        Extracts the attributes of a task with the Task-ID defined by id and creates a new
+        task-object.
+        Input arguments:
+            task_id -- id of the task, corresponds to Task_ID
+        Return values:
+            task
+            None -- no task found
+            -1 -- an error occurred
+        """
+        # create logger
+        logger = logging.getLogger('traditional-SA.database.get_task')
 
-    Extracts the attributes of a task with the Task-ID defined by id and creates a new task-object.
-    Input arguments:
-        id -- id of the task, corresponds to Task_ID
-    Return values:
-        task
-        None -- no task found
-        -1 -- an error occurred
-    """
+        # Check input argument - must be a positive integer number
+        if not isinstance(task_id, int) or task_id < 0:  # invalid input
+            logger.error("Invalid input argument - must be an positive int!")
+            return -1
 
-    # Check input argument - must be a positive integer number
-    if not isinstance(id, int) or id < 0:  # invalid input
-        logging.error("new_database/get_task(): invalid input argument - must be an positive int!")
-        return -1
+        # Open database if not connected
+        if self.db_connection is None or self.db_cursor is None:
+            self.open_db()
 
-    # Open database if not connected
-    global _db_connection, _db_cursor
-    if _db_connection is None or _db_cursor is None:
-        open_DB()
+        # Read the task defined by id
+        self.db_cursor.execute("SELECT * FROM Task WHERE Task_ID = ?", (task_id,))
+        row = self.db_cursor.fetchall()
 
-    # Read the task defined by id
-    _db_cursor.execute("SELECT * FROM Task WHERE Task_ID = ?", (id,))
-    row = _db_cursor.fetchall()
+        self.close_db()  # close database
 
-    close_DB()  # close database
+        # Check number of rows
+        if not row:  # no task with Task_ID = id found
+            logger.debug("No task with Task_ID = %d found!", task_id)
+            return None
 
-    # Check number of rows
-    if len(row) == 0:  # no task with Task_ID = id found
-        logging.debug("new_database/get_task(): no task with Task_ID = " + str(id) + "found!")
-        return None
-    elif len(row) > 1:  # more than one task with Task_ID = id found
-        logging.error(
-            "new_database/get_task(): more than one task with Task_ID = " + str(id) + " found!")
-        return -1
-    else:  # one task was found
-        # Extract attributes of the task
-        id = row[0][0]
+        if len(row) > 1:  # more than one task with Task_ID = id found
+            logger.error("More than one task with Task_ID = %d found!", task_id)
+            return -1
+
+        # one task was found: extract attributes of the task
+        task_id = row[0][0]
         priority = row[0][1]
         pkg = row[0][5]
         arg = row[0][6]
@@ -258,51 +284,53 @@ def get_task(id):
         number_of_jobs = row[0][11]
 
         # Define execution time depending on pkg and arg
-        if (pkg, arg) in _execution_time:  # combination of pkg and arg exists
-            execution_time = _execution_time[(pkg, arg)][_C_Type]
+        if (pkg, arg) in self.execution_time_dict:  # combination of pkg and arg exists
+            execution_time = self.execution_time_dict[(pkg, arg)][self.c_type]
         else:  # combination of pkg and arg does not exist
             # use only pkg to determine execution time
-            execution_time = _execution_time[pkg][_C_Type]
+            execution_time = self.execution_time_dict[pkg][self.c_type]
 
         # Create new task
-        new_task = Task(id=id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
+        new_task = Task(id=task_id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
                         period=period, number_of_jobs=number_of_jobs, execution_time=execution_time)
 
         # Return created task
         return new_task
 
+    # get all tasks
+    def get_all_tasks(self):
+        """Read all tasks from the database.
 
-# get all tasks
-def get_all_tasks():
-    """Read all tasks from the database.
+        Extracts the attributes of all tasks and creates a list of task-objects.
+        Return:
+            list with all tasks
+            -1 - an error occurred
+        """
+        # create logger
+        logger = logging.getLogger('traditional-SA.database.get_all_tasks')
 
-    Extracts the attributes of all tasks and creates a list of task-objects.
-    Return:
-        list with all tasks
-        -1 - an error occurred
-    """
+        # open database if not connected
+        if self.db_connection is None or self.db_cursor is None:
+            self.open_db()
 
-    # open database if not connected
-    global _db_connection, _db_cursor
-    if _db_connection is None or _db_cursor is None:
-        open_DB()
+        # read all tasks
+        self.db_cursor.execute("SELECT * FROM Task")
+        rows = self.db_cursor.fetchall()
 
-    # read all tasks
-    _db_cursor.execute("SELECT * FROM Task")
-    rows = _db_cursor.fetchall()
+        # close database
+        self.close_db()
 
-    # close database
-    close_DB()
+        # check number of rows
+        if not rows:  # no tasks found
+            logger.error("No tasks found!")
+            return -1
 
-    # check number of rows
-    if len(rows) < 1:  # no tasks found
-        logging.error("database.py/get_all_tasks(): no tasks found!")
-        return -1
-    else:  # at least one task was found
+        # at least one task was found
         task_list = []  # empty list for tasks
+
         # iterate over all rows, extract attributes and create task
         for row in rows:
-            id = row[0]
+            task_id = row[0]
             priority = row[1]
             pkg = row[5]
             arg = row[6]
@@ -310,160 +338,163 @@ def get_all_tasks():
             period = row[10]
             number_of_jobs = row[11]
 
-            new_task = Task(id=id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
+            new_task = Task(id=task_id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
                             period=period, number_of_jobs=number_of_jobs)
 
             task_list.append(new_task)
         return task_list
 
+    # get all jobs of a task
+    def get_jobs_c_of_task(self, task_id):
+        """Read all jobs execution times of a task from the database.
 
-# get all jobs of a task
-def get_jobs_C(task_id):
-    """Read all jobs of a task from the database.
+        All jobs of a task are read and the execution time is calculated using start and end time.
+        Args:
+            task_id - id of the task which jobs execution times are wanted
+        Return:
+            list with execution times of jobs
+            -1 -  an error occurred
+        """
+        # create logger
+        logger = logging.getLogger('traditional-SA.database.get_jobs_C')
 
-    Extracts the attributes of all jobs of a task defined by task_id.
-    Args:
-        task_id - id of the task which jobs are wanted
-    Return:
-        list with execution times of jobs
-        -1 -  an error occured
-    """
-    # Check input argument - must be a positive integer number
-    if not isinstance(task_id, int) or task_id < 0:
-        logging.error(
-            "database.py/get_jobs(): invalid input argument - must be a positive int!")
-        return -1
+        # Check input argument - must be a positive integer number
+        if not isinstance(task_id, int) or task_id < 0:
+            logger.error("Invalid input argument - must be a positive int!")
+            return -1
 
-    # Open database if not connected
-    global _db_connection, _db_cursor
-    if _db_connection is None or _db_cursor is None:
-        open_DB()
+        # Open database if not connected
+        if self.db_connection is None or self.db_cursor is None:
+            self.open_db()
 
-    # Read all jobs of task defined by task_id that where executed successful (Exit_Value = EXIT)
-    _db_cursor.execute("SELECT * FROM Job WHERE Task_ID = ? AND Exit_Value = ?", (task_id, "EXIT"))
-    rows = _db_cursor.fetchall()
+        # Read all jobs of task defined by task_id with successful execution (Exit_Value = EXIT)
+        self.db_cursor.execute("SELECT * FROM Job WHERE Task_ID = ? AND Exit_Value = ?",
+                               (task_id, "EXIT"))
+        rows = self.db_cursor.fetchall()
 
-    # close database
-    close_DB()
+        # close database
+        self.close_db()
 
-    # Check number of rows
-    if len(rows) == 0:  # no jobs found
-        logging.error("database.py/get_jobs(): no jobs for Task-ID " + str(task_id) + " found!")
-        return -1
+        # Check number of rows
+        if not rows:  # no jobs found
+            logger.error("No jobs for Task-ID %d found!", task_id)
+            return -1
 
-    # create empty list for execution times
-    execution_times = []
+        # create empty list for execution times
+        execution_times = []
 
-    # For each job extract attributes and create a new job-object
-    for row in rows:
-        start_date = row[3]
-        end_date = row[4]
-        execution_time = end_date - start_date
+        # For each job extract attributes and create a new job-object
+        for row in rows:
+            start_date = row[3]
+            end_date = row[4]
+            execution_time = end_date - start_date
 
-        if (execution_time > 0):
-            execution_times.append(execution_time)
+            if execution_time > 0:  # execution time is valid
+                execution_times.append(execution_time)
 
-    return execution_times
+        return execution_times
 
+    # save execution times of tasks
+    def save_execution_times(self, task_dict):
+        """Save execution times in the database.
 
-# save execution times of tasks
-def save_execution_times(task_dict):
-    """Save execution times in the database.
+        Saves the given execution times to the database.
+        The values of a key consist of (min_C, max_C, average_C).
+        Args:
+            task_dict - dictionary with task execution times
+        """
+        # create logger
+        logger = logging.getLogger('traditional-SA.database.save_execution_times')
 
-    Saves the given execution times to the database. The values of a key consist of (min_C, max_C, average_C)
-    Args:
-        task_dict - dictionary with task execution times
-    """
-    # Open database if not connected
-    global _db_connection, _db_cursor
-    if _db_connection is None or _db_cursor is None:
-        open_DB()
+        # Open database if not connected
+        if self.db_connection is None or self.db_cursor is None:
+            self.open_db()
 
-    # create table "ExecutionTimes" if it does not exist
-    create_table_sql = "CREATE TABLE IF NOT EXISTS ExecutionTimes (" \
-                       "[PKG(Arg)] text PRIMARY KEY, " \
-                       "[Min_C] integer, " \
-                       "[Max_C] integer, " \
-                       "[Average_C] integer" \
-                       ");"
-    try:
-        _db_cursor.execute(create_table_sql)
-    except sqlite3.Error as e:
-        print(e)
+        # create table "ExecutionTimes" if it does not exist
+        create_table_sql = "CREATE TABLE IF NOT EXISTS ExecutionTimes (" \
+                           "[PKG(Arg)] text PRIMARY KEY, " \
+                           "[Min_C] integer, " \
+                           "[Max_C] integer, " \
+                           "[Average_C] integer" \
+                           ");"
+        try:
+            self.db_cursor.execute(create_table_sql)
+        except sqlite3.Error as sqle:
+            logger.error(sqle)
 
-    # sql statement for inserting or replacing a row in the ExecutionTimes table
-    insert_or_replace_sql = "INSERT OR REPLACE INTO ExecutionTimes([PKG(Arg)], Min_C, Max_C, Average_C) VALUES(?, ?, ?, ?)"
+        # sql statement for inserting or replacing a row in the ExecutionTimes table
+        insert_or_replace_sql = "INSERT OR REPLACE INTO ExecutionTimes" \
+                                "([PKG(Arg)], Min_C, Max_C, Average_C) VALUES(?, ?, ?, ?)"
 
-    # iterate over all dictionary keys
-    for key in task_dict:
-        # insert or replace the row with the given execution times
-        if isinstance(key, str):  # key = (PKG)
-            _db_cursor.execute(insert_or_replace_sql,
-                               (key, task_dict[key][0], task_dict[key][1], task_dict[key][2]))
-        elif len(key) == 2:  # key is combination of pkg and arg: key = (PKG, Arg)
-            _db_cursor.execute(insert_or_replace_sql, (
-                key[0] + "(" + str(key[1]) + ")", task_dict[key][0], task_dict[key][1],
-                task_dict[key][2]))
+        # iterate over all dictionary keys
+        for key in task_dict:
+            # insert or replace the row with the given execution times
+            if isinstance(key, str):  # key = (PKG)
+                self.db_cursor.execute(insert_or_replace_sql,
+                                       (key, task_dict[key][0], task_dict[key][1],
+                                        task_dict[key][2]))
+            elif len(key) == 2:  # key is combination of pkg and arg: key = (PKG, Arg)
+                self.db_cursor.execute(insert_or_replace_sql, (
+                    key[0] + "(" + str(key[1]) + ")", task_dict[key][0], task_dict[key][1],
+                    task_dict[key][2]))
 
-    # save (commit) the changes
-    _db_connection.commit()
+        # save (commit) the changes
+        self.db_connection.commit()
 
-    # close database
-    close_DB()
+        # close database
+        self.close_db()
 
+    # read execution times from database
+    def read_execution_times(self):
+        """Read the execution times of the tasks from the database.
 
-# read execution times of tasks
-def read_execution_times():
-    """Read the execution times of the tasks from the database.
+        The minimum, maximum and average execution times of all tasks are saved in the table
+        ExecutionTimes. If this table is not present in the database, the default execution times in
+        EXECUTION_TIMES are used.
+        """
+        # create logger
+        logger = logging.getLogger('traditional-SA.database.read_execution_times')
 
-    The minimum, maximum and average execution times of all tasks are saved in the table ExecutionTimes.
-    If this table is not present in the database, the default execution times in _default_execution_times are used.
+        # open database if not connected
+        if self.db_connection is None or self.db_cursor is None:
+            self.open_db()
 
-    Return:
-        -1 - an error occurred
-    """
-    # open database if not connected
-    global _db_connection, _db_cursor
-    if _db_connection is None or _db_cursor is None:
-        open_DB()
+        # read table ExecutionTimes
+        self.db_cursor.execute("SELECT * FROM ExecutionTimes")
+        rows = self.db_cursor.fetchall()
 
-    # read table ExecutionTimes
-    _db_cursor.execute("SELECT * FROM ExecutionTimes")
-    rows = _db_cursor.fetchall()
+        # close database
+        self.close_db()
 
-    # check if execution times where found
-    if len(rows) == 0:  # now row was read
-        logging.error(
-            "database.py/read_execution_times(): table ExecutionTimes does not exist or is empty!")
-        return -1
+        # check if execution times where found
+        if not rows:  # now row was read
+            logger.error("Table ExecutionTimes does not exist or is empty!")
 
-    # update execution time dictionary
-    for row in rows:  # iterate over all rows
-        # get data from row
-        pkg_arg = row[0]
-        min_C = row[1]
-        max_C = row[2]
-        average_C = row[3]
-        
-        # TODO: delete rounding
-        average_C = math.ceil(average_C)
+        # update execution time dictionary
+        for row in rows:  # iterate over all rows
+            # get data from row
+            pkg_arg = row[0]
+            min_c = row[1]
+            max_c = row[2]
+            average_c = row[3]
 
-        # split pkg and arg and create dictionary entry
-        if '(' in pkg_arg:  # string contains pkg and arg
-            pkg, arg = pkg_arg.split('(')
-            arg = int(arg[:-1])  # delete last character = ')' and format to int
-            dict_entry = {(pkg, arg): (min_C, max_C, average_C)}
-        else:  # string contains only pkg, no arg
-            pkg = pkg_arg
-            dict_entry = {pkg: (min_C, max_C, average_C)}
+            if self.round_execution_time:  # round execution time to next higher int
+                average_c = math.ceil(average_c)
 
-        # update dictionary
-        _execution_time.update(dict_entry)
+            # split pkg and arg and create dictionary entry
+            if '(' in pkg_arg:  # string contains pkg and arg
+                pkg, arg = pkg_arg.split('(')
+                arg = int(arg[:-1])  # delete last character = ')' and format to int
+                dict_entry = {(pkg, arg): (min_c, max_c, average_c)}
+            else:  # string contains only pkg, no arg
+                pkg = pkg_arg
+                dict_entry = {pkg: (min_c, max_c, average_c)}
+
+            # update dictionary
+            self.execution_time_dict.update(dict_entry)
 
 
 if __name__ == "__main__":
     # Configure logging: format should be "LEVELNAME: Message",
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
-    dataset = get_dataset()
-    print(dataset[0])
