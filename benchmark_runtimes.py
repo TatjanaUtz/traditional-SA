@@ -5,7 +5,7 @@ execution times are calculated and saved to the database.
 """
 import logging
 
-import database as db
+from database import Database
 
 
 def benchmark_runtimes():
@@ -17,10 +17,13 @@ def benchmark_runtimes():
     # create logger
     logger = logging.getLogger('traditional-SA.benchmark_runtimes.benchmark_runtimes')
 
+    # create database object
+    my_database = Database()
+
     logger.debug("Starting to benchmark runtimes...")
 
     # Get all tasks from the database
-    task_list = db.get_all_tasks()
+    task_list = my_database.get_all_tasks()
 
     # create empty dictionary
     task_dict = dict()
@@ -34,7 +37,7 @@ def benchmark_runtimes():
             task_dict[(task.pkg, task.arg)] = []  # add (pkg, arg)
 
         # get execution times of all jobs of the current task
-        job_list = db.get_jobs_c(task.id)
+        job_list = my_database.get_jobs_c_of_task(task.id)
 
         # add execution times to the dictionary
         if job_list is not -1:  # at least one job was found
@@ -64,7 +67,7 @@ def benchmark_runtimes():
     logger.debug("Saving calculated execution times to database...")
 
     # save execution times to database
-    db.save_execution_times(task_dict)
+    my_database.save_execution_times(task_dict)
 
     logger.debug("Saving successful! Benchmark finished!")
 

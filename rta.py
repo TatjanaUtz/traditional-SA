@@ -1,5 +1,9 @@
-"""RTA Modul
-Response Time Analysis Methods.
+"""Response Time Analysis.
+
+Response Time Analysis Methods:
+    rta_audsley: RTA according to Audsley.
+    rta_buttazzo: RTA according to Buttazzo.
+The methods only differ in their starting value for response time calculation.
 """
 import logging
 import math
@@ -38,7 +42,8 @@ def rta_audsley(taskset):
         if response_time == -1:  # an error occurred
             logger.error("Error value returned from _calculate_response_time_audsley()")
             return -1
-        elif response_time is False or response_time > taskset[i].deadline:
+
+        if response_time is False or response_time > taskset[i].deadline:
             # Task-set is NOT schedulable
             return False
 
@@ -60,7 +65,8 @@ def _caluclate_response_time_audsley(taskset, check_task):
         check_task -- the task for which the response time should be calculated
     Return value:
         response time of check_task
-        False -- value of response time exceeds deadline of task (= period) -> task-set is not schedulable
+        False -- value of response time exceeds deadline of task (= period)
+                 -> task-set is not schedulable
         -1 -- an error occurred
     """
     # create logger
@@ -72,34 +78,34 @@ def _caluclate_response_time_audsley(taskset, check_task):
         logger.error("Invalid input arguments!")
         return -1
 
-    logger.debug("TASK " + str(check_task.id))
+    logger.debug("TASK %s", str(check_task.task_id))
 
     # Create task-set with all task of higher or same priority as check_task = hp(i)
-    hp = Taskset(tasks=[])
+    high_prio_set = Taskset(tasks=[])
     for task in taskset:  # Iterate over all tasks
         if task.priority <= check_task.priority and task is not check_task:
-            hp.add_task(task)  # Add task to hp-set
-    logger.debug("hp-set = " + str(hp))
+            high_prio_set.add_task(task)  # Add task to hp-set
+    logger.debug("hp-set = %s", str(high_prio_set))
 
-    r0 = check_task.execution_time  # Start with execution time of task i
-    logger.debug("R0 = " + str(r0))
+    resp_time_0 = check_task.execution_time  # Start with execution time of task i
+    logger.debug("R0 = %s", str(resp_time_0))
 
     # Check if there are tasks of higher or same priority
-    if len(hp) == 0:  # check_task is task with highest priority
-        return r0  # Return response time = execution time of check_task
+    if not high_prio_set:  # check_task is task with highest priority
+        return resp_time_0  # Return response time = execution time of check_task
 
     r_old = 0
-    r_new = r0
+    r_new = resp_time_0
 
     while r_old != r_new:
         r_old = r_new
 
         sum_hp = 0
-        for task in hp:  # Iterate over all higher priority tasks
+        for task in high_prio_set:  # Iterate over all higher priority tasks
             sum_hp += math.ceil(r_old / task.period) * task.execution_time
 
         r_new = check_task.execution_time + sum_hp
-        logger.debug("R = " + str(r_new))
+        logger.debug("R = %s", str(r_new))
 
         if r_new > check_task.deadline:  # Deadline miss of check_task
             logger.debug("R > D")
@@ -138,7 +144,8 @@ def rta_buttazzo(taskset):
         if response_time == -1:  # an error occurred
             logger.error("Error value returned from _calculate_response_time_buttazzo()")
             return -1
-        elif response_time is False or response_time > taskset[i].deadline:
+
+        if response_time is False or response_time > taskset[i].deadline:
             # Task-set is NOT schedulable
             return False
 
@@ -160,7 +167,8 @@ def _caluclate_response_time_buttazzo(taskset, check_task):
         check_task -- the task for which the response time should be calculated
     Return value:
         response time of check_task
-        False -- value of response time exceeds deadline of task (= period) -> task-set is not schedulable
+        False -- value of response time exceeds deadline of task (= period)
+                  -> task-set is not schedulable
         -1 -- an error occurred
     """
     # create logger
@@ -172,42 +180,42 @@ def _caluclate_response_time_buttazzo(taskset, check_task):
         logger.error("Invalid input arguments!")
         return -1
 
-    logger.debug("TASK " + str(check_task.id))
+    logger.debug("TASK %s", str(check_task.task_id))
 
     # Create task-set with all task of higher or same priority as check_task = hp(i)
     # Add the execution times of all higher or same priority tasks to R0
-    hp = Taskset(tasks=[])
-    r0 = 0
+    high_prio_set = Taskset(tasks=[])
+    resp_time_0 = 0
     for task in taskset:  # Iterate over all tasks
         if task.priority <= check_task.priority and task is not check_task:
-            hp.add_task(task)  # Add task to hp-set
-            r0 += task.execution_time
-    logger.debug("hp-set = " + str(hp))
+            high_prio_set.add_task(task)  # Add task to hp-set
+            resp_time_0 += task.execution_time
+    logger.debug("hp-set = %s", str(high_prio_set))
 
-    r0 += check_task.execution_time  # Add execution time of task i
-    logger.debug("R0 = " + str(r0))
+    resp_time_0 += check_task.execution_time  # Add execution time of task i
+    logger.debug("R0 = %s", str(resp_time_0))
 
     # Check if there are tasks of higher or same priority
-    if len(hp) == 0:  # check_task is task with highest priority
-        return r0  # Return response time = execution time of check_task
+    if not high_prio_set:  # check_task is task with highest priority
+        return resp_time_0  # Return response time = execution time of check_task
 
     # Check if deadline is already exceeded
-    if r0 > check_task.deadline:  # Deadline miss of check_task
+    if resp_time_0 > check_task.deadline:  # Deadline miss of check_task
         logger.debug("R > D")
         return False
 
     r_old = 0
-    r_new = r0
+    r_new = resp_time_0
 
     while r_old != r_new:
         r_old = r_new
 
         sum_hp = 0
-        for task in hp:  # Iterate over all higher priority tasks
+        for task in high_prio_set:  # Iterate over all higher priority tasks
             sum_hp += math.ceil(r_old / task.period) * task.execution_time
 
         r_new = check_task.execution_time + sum_hp
-        logger.debug("R = " + str(r_new))
+        logger.debug("R = %s", str(r_new))
 
         if r_new > check_task.deadline:  # Deadline miss of check_task
             logger.debug("R > D")

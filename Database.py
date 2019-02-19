@@ -59,6 +59,7 @@ class Database:
 
     # constructor
     def __init__(self):
+        """Constructor of class Database."""
 
         # path to the database = current working directory
         self.db_dir = os.path.dirname(os.path.abspath(__file__))
@@ -291,7 +292,7 @@ class Database:
             execution_time = self.execution_time_dict[pkg][self.c_type]
 
         # Create new task
-        new_task = Task(id=task_id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
+        new_task = Task(task_id=task_id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
                         period=period, number_of_jobs=number_of_jobs, execution_time=execution_time)
 
         # Return created task
@@ -338,7 +339,7 @@ class Database:
             period = row[10]
             number_of_jobs = row[11]
 
-            new_task = Task(id=task_id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
+            new_task = Task(task_id=task_id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
                             period=period, number_of_jobs=number_of_jobs)
 
             task_list.append(new_task)
