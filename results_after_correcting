@@ -1,0 +1,88 @@
+
+---------- Results of simulate ----------
+Correct results: 98 / 100 = 98.00% 
+Incorrect results: 2/ 100 = 2.00% 
+True positive results (tp) = 98 = 98.00% 
+False positive results (fp) = 0 = 0.00% 
+True negative results (tn) = 0 = 0.00% 
+False negative results (fn) = 2 = 2.00% 
+Other results = 0 
+-----------------------------------------
+Time elapsed = 1.1260147094726562
+
+---------- Results of basic_utilization_test ----------
+Correct results: 98 / 100 = 98.00% 
+Incorrect results: 2/ 100 = 2.00% 
+True positive results (tp) = 98 = 98.00% 
+False positive results (fp) = 0 = 0.00% 
+True negative results (tn) = 0 = 0.00% 
+False negative results (fn) = 2 = 2.00% 
+Other results = 0 
+-------------------------------------------------------
+Time elapsed = 0.004986763000488281
+
+---------- Results of rm_utilization_test ----------
+Correct results: 100 / 100 = 100.00% 
+Incorrect results: 0/ 100 = 0.00% 
+True positive results (tp) = 100 = 100.00% 
+False positive results (fp) = 0 = 0.00% 
+True negative results (tn) = 0 = 0.00% 
+False negative results (fn) = 0 = 0.00% 
+Other results = 0 
+----------------------------------------------------
+Time elapsed = 0.005983114242553711
+
+---------- Results of hb_utilization_test ----------
+Correct results: 100 / 100 = 100.00% 
+Incorrect results: 0/ 100 = 0.00% 
+True positive results (tp) = 100 = 100.00% 
+False positive results (fp) = 0 = 0.00% 
+True negative results (tn) = 0 = 0.00% 
+False negative results (fn) = 0 = 0.00% 
+Other results = 0 
+----------------------------------------------------
+Time elapsed = 0.005983591079711914
+
+---------- Results of rta_audsley ----------
+Correct results: 98 / 100 = 98.00% 
+Incorrect results: 2/ 100 = 2.00% 
+True positive results (tp) = 98 = 98.00% 
+False positive results (fp) = 0 = 0.00% 
+True negative results (tn) = 0 = 0.00% 
+False negative results (fn) = 2 = 2.00% 
+Other results = 0 
+--------------------------------------------
+Time elapsed = 0.006981372833251953
+
+---------- Results of rta_buttazzo ----------
+Correct results: 98 / 100 = 98.00% 
+Incorrect results: 2/ 100 = 2.00% 
+True positive results (tp) = 98 = 98.00% 
+False positive results (fp) = 0 = 0.00% 
+True negative results (tn) = 0 = 0.00% 
+False negative results (fn) = 2 = 2.00% 
+Other results = 0 
+---------------------------------------------
+Time elapsed = 0.015938758850097656
+
+---------- Results of rm_workload_test ----------
+Correct results: 100 / 100 = 100.00% 
+Incorrect results: 0/ 100 = 0.00% 
+True positive results (tp) = 100 = 100.00% 
+False positive results (fp) = 0 = 0.00% 
+True negative results (tn) = 0 = 0.00% 
+False negative results (fn) = 0 = 0.00% 
+Other results = 0 
+-------------------------------------------------
+Time elapsed = 0.011966466903686523
+
+---------- Results of het_workload_test ----------
+Correct results: 98 / 100 = 98.00% 
+Incorrect results: 2/ 100 = 2.00% 
+True positive results (tp) = 98 = 98.00% 
+False positive results (fp) = 0 = 0.00% 
+True negative results (tn) = 0 = 0.00% 
+False negative results (fn) = 2 = 2.00% 
+Other results = 0 
+--------------------------------------------------
+Time elapsed = 0.008976936340332031
