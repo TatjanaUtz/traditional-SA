@@ -84,6 +84,7 @@ class Database:
 
         # dictionary with execution times of all tasks
         self.execution_time_dict = EXECUTION_TIME_DICT
+        self.read_execution_times()
 
     # Open database
     def open_db(self):
@@ -164,7 +165,7 @@ class Database:
             task_ids = row[2:]
 
             # Create empty task-set
-            new_taskset = Taskset(id=taskset_id, result=result, tasks=[])
+            new_taskset = Taskset(taskset_id=taskset_id, result=result, tasks=[])
 
             # iterate over all tasks and create task-set
             for task_id in task_ids:
@@ -224,7 +225,7 @@ class Database:
         task_ids = row[0][2:]
 
         # Create empty task-set
-        new_taskset = Taskset(id=taskset_id, result=result, tasks=[])
+        new_taskset = Taskset(taskset_id=taskset_id, result=result, tasks=[])
 
         # Iterate over all tasks and create task-set
         for task_id in task_ids:
