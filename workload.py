@@ -1,3 +1,7 @@
+"""Module workload.
+
+This module contains all workload based schedulability test.
+"""
 import logging
 import math
 
@@ -53,7 +57,7 @@ def _get_scheduling_points(hp_taskset, check_task):
     return scheduling_points
 
 
-def _W_i(t, taskset):
+def _workload_i(t, taskset):
     """ Calculate workload.
 
     This method calculates the workload of a task tau_i for a scheduling point t.
@@ -61,8 +65,8 @@ def _W_i(t, taskset):
 
     Args:
         t -- scheduling point
-        taskset -- task-set with all tasks that should be considered for calculation (= tau_i and all
-                   tasks with higher priority)
+        taskset -- task-set with all tasks that should be considered for calculation (= tau_i and
+                   all tasks with higher priority)
     Return:
         the workload of the given task-set at scheduling point t
         -1 -- an error occurred
@@ -83,7 +87,7 @@ def _W_i(t, taskset):
     for task in taskset:
         w_i += math.ceil(t / task.period) * task.execution_time
 
-    logger.debug("W_i({}) = {}".format(t, w_i))
+    logger.debug("W_i(%d) = %f", t, w_i)
 
     return w_i
 
@@ -113,9 +117,9 @@ def _L_i(t, taskset):
         return -1
 
     # Calculate L_i(t)
-    l_i = _W_i(t, taskset) / t
+    l_i = _workload_i(t, taskset) / t
 
-    logger.debug("L_i({}) = {}".format(t, l_i))
+    logger.debug("L_i(%f) = %f", t, l_i)
 
     return l_i
 
@@ -123,8 +127,8 @@ def _L_i(t, taskset):
 def rm_workload_test(taskset):
     """Workload test.
 
-    This method implements the workload test according to Lehoczky, Sha, Ding 1989 for RM scheduler and D = T.
-    A task-set is schedulable if for every task tau_i: L_i <= 1.
+    This method implements the workload test according to Lehoczky, Sha, Ding 1989 for RM scheduler
+    and D = T. A task-set is schedulable if for every task tau_i: L_i <= 1.
     Lehoczky, Sha, Ding 1989: The Rate Monotonic Scheduling Algorithm: Exact Characterization And
                               Average Case Behavior
 
@@ -144,7 +148,8 @@ def rm_workload_test(taskset):
 
     # Iterate over all tasks and check schedulability of tasks
     # The task-set is schedulable if L = max(L_i) <= 1
-    # This means that if all tasks are schedulable, the task-set is also schedulable and the other way round
+    # This means that if all tasks are schedulable, the task-set is also schedulable and the other
+    # way round
     for check_task in taskset:
         logger.debug("TASK {}".format(check_task.id))
 
@@ -167,12 +172,14 @@ def rm_workload_test(taskset):
             if l_i <= 1:  # task is schedulable, stop iteration and check next task in task-set
                 logger.debug("L_i({}) <= 1 -> task schedulable".format(t))
                 break
-        else:  # the condition was not meet for any scheduling pint: task is not schedulable -> task-set is not schedulable
+        else:  # the condition was not meet for any scheduling point:
+            # task not schedulable -> task-set not schedulable
             logger.debug("Task is not schedulable -> Task-set is not schedulable")
             return False
-    else:  # all tasks are schedulable -> task-set is schedulable
-        logger.debug("All tasks are schedulable -> Task-set is schedulable")
-        return True
+
+    # all tasks are schedulable -> task-set is schedulable
+    logger.debug("All tasks are schedulable -> Task-set is schedulable")
+    return True
 
 
 _last_psi = []
@@ -212,19 +219,17 @@ def _W_i_het(i, b, taskset):
 
     global _last_psi, _last_workload
     if b <= _last_psi[i]:  # if W(i, b) already computed
-        logger.debug("W({}, {}) already computed".format(i, b))
+        logger.debug("W(%d, %d) already computed", i, b)
         return _last_workload[i]  # don't go further
 
     f = math.floor(b / taskset[i - 1].period)
     c = math.ceil(b / taskset[i - 1].period)
-    logger.debug("f = {} \t c = {}".format(f, c))
+    logger.debug("f = %d \t c = %d", f, c)
 
-    branch0 = b - f * (taskset[i - 1].period - taskset[i - 1].execution_time) + _W_i_het(i - 1, f *
-                                                                                         taskset[
-                                                                                             i - 1].period,
-                                                                                         taskset)
+    branch0 = b - f * (taskset[i - 1].period - taskset[i - 1].execution_time) + \
+              _W_i_het(i - 1, f * taskset[i - 1].period, taskset)
     branch1 = c * taskset[i - 1].execution_time + _W_i_het(i - 1, b, taskset)
-    logger.debug("branch0 = {} \t branch1 = {}".format(branch0, branch1))
+    logger.debug("branch0 = %f \t branch1 = %f", branch0, branch1)
 
     _last_psi[i] = b
     _last_workload[i] = min(branch0, branch1)
@@ -259,26 +264,27 @@ def het_workload_test(taskset):
 
     # iterate over all tasks in the task-set
     for i in range(1, len(taskset) + 1):
-        logger.debug("TASK {}".format(taskset[i - 1].id))
+        logger.debug("TASK %d", taskset[i - 1].id)
 
         # calculate W_[i-1](T_i)
         w = _W_i_het(i - 1, taskset[i - 1].period, taskset)
-        logger.debug("W_{}({}) = {}".format(i - 1, taskset[i - 1].period, w))
+        logger.debug("W_%d(%d) = %d", i - 1, taskset[i - 1].period, w)
 
         # add computation time of check_task
-        sum = taskset[i - 1].execution_time + w
-        logger.debug("Summe = {}".format(sum))
+        workload_sum = taskset[i - 1].execution_time + w
+        logger.debug("Summe = %d", workload_sum)
 
         # check schedulability condition: C_i + W_[i-1](T_i) <= T_i
-        if sum > taskset[i - 1].deadline:  # task is NOT schedulable
+        if workload_sum > taskset[i - 1].deadline:  # task is NOT schedulable
             logger.debug("Task is not schedulable -> Task-set is not schedulable")
             return False
-        else:  # task is schedulable
-            logger.debug("Task is schedulable")
 
-    else:  # all tasks are schedulable -> task-set is schedulable
-        logger.debug("All tasks are schedulable -> Task-set is schedulable")
-        return True
+        # task is schedulable
+        logger.debug("Task is schedulable")
+
+    # all tasks are schedulable -> task-set is schedulable
+    logger.debug("All tasks are schedulable -> Task-set is schedulable")
+    return True
 
 
 if __name__ == "__main__":

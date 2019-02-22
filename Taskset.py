@@ -1,11 +1,4 @@
-"""Representation of a task-set.
-
-Currently only the following attributes are integrated:
-    id -- id of the task-set, corresponds to column 'Set_ID'
-    result -- 1 if task-set could be successfully scheduled, otherwise 0
-    tasks -- list of tasks (task objects)
-"""
-
+"""Module Taskset."""
 import logging
 import operator
 
@@ -13,13 +6,23 @@ from Task import Task
 
 
 class Taskset:
+    """Representation of a task-set.
+
+    Currently only the following attributes are integrated:
+        id -- id of the task-set, corresponds to column 'Set_ID'
+        result -- 1 if task-set could be successfully scheduled, otherwise 0
+        tasks -- list of tasks (task objects)
+    """
 
     # Constructor
-    def __init__(self, id=-1, result=-1, tasks=[]):
+    def __init__(self, taskset_id=-1, result=-1, tasks=None):
         """Constructor: initialize the task-set."""
-        self.id = id
+        self.taskset_id = taskset_id
         self.result = result
-        self.tasks = tasks
+        if tasks is None:
+            self.tasks = []
+        else:
+            self.tasks = tasks
 
         # Sort tasks according to increasing priorities
         self.sort()
@@ -27,9 +30,9 @@ class Taskset:
     # String representation
     def __str__(self):
         """Represent task-set as string."""
-        s = "id=" + str(self.id) + " result=" + str(self.result) + " " + str(
-            [str(task) for task in self.tasks])
-        return s
+        representation_string = "id=" + str(self.taskset_id) + " result=" + str(self.result) + " " \
+                                + str([str(task) for task in self.tasks])
+        return representation_string
 
     # Add task
     def add_task(self, task):
@@ -39,16 +42,14 @@ class Taskset:
         sort it according to priorities.
         Input arguments:
             task -- the task that should be added, must be of type 'Task'
-        Return values:
-            -1 -- error occurred
         """
         # Check input arguments
         if not isinstance(task, Task):  # Wrong input argument
             logging.error("Taskset/add_task(): wrong input argument - must be of type 'Task'")
-            return -1
-        else:
-            self.tasks.append(task)  # Add task to task-set
-            self.sort()  # Sort tasks according to increasing priorities
+            return
+
+        self.tasks.append(task)  # Add task to task-set
+        self.sort()  # Sort tasks according to increasing priorities
 
     # Length of task-set
     def __len__(self):

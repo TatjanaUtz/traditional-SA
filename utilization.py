@@ -8,8 +8,8 @@ from Taskset import Taskset
 def basic_utilization_test(taskset):
     """Utilization-based schedulability test.
 
-    A task-set is schedulable, if the total utilization of a processor is less than or equal to 1: U <= 1.
-    The utilization of a task is the fraction of processing time and deadline or period:
+    A task-set is schedulable, if the total utilization of a processor is less than or equal to 1:
+    U <= 1. The utilization of a task is the fraction of processing time and deadline or period:
     U_i = C_i / min(D_i, T_i).
 
     Return value:
@@ -41,14 +41,10 @@ def basic_utilization_test(taskset):
         # Add utilization-factor of task to total utilization
         total_utilization += task_utilization
 
-    logger.debug(
-        "utilization.py/basic_utilization_test(): total Utilization = " + str(total_utilization))
+    logger.debug("Total Utilization = %f", total_utilization)
 
     # Check schedulability
-    if total_utilization <= 1:  # Task-set is schedulable
-        return True
-    else:  # Task-set is NOT schedulable
-        return False
+    return bool(total_utilization <= 1)
 
 
 def rm_utilization_test(taskset):
@@ -59,8 +55,8 @@ def rm_utilization_test(taskset):
     n(2^(1/n) - 1): U <= n(2^(1/n) - 1).
     The utilization of a task is the fraction of processing time and period: U_i = C_i / T_i.
     The test can also be used to test other fix priority algorithms, as the RM algorithm is optimal.
-    Optimal means, that if the RM algorithm cannot create a feasible schedule, no other priority-based
-    algorithm can do this.
+    Optimal means, that if the RM algorithm cannot create a feasible schedule, no other
+    priority-based algorithm can do this.
 
     Return value:
     True/False -- schedulabilty of task-set
@@ -86,23 +82,20 @@ def rm_utilization_test(taskset):
 
     # Calculate utilization bound for RM
     utilization_bound = len(taskset) * (2 ** (1 / len(taskset)) - 1)
-    logger.debug("Utilization bound = " + str(utilization_bound))
-    logger.debug("Total Utilization = " + str(total_utilization))
+    logger.debug("Utilization bound = %f", utilization_bound)
+    logger.debug("Total Utilization = %f", total_utilization)
 
     # Check schedulability
-    if total_utilization <= utilization_bound:  # Task-set is schedulable
-        return True
-    else:  # Task-set is NOT schedulable
-        return False
+    return bool(total_utilization <= utilization_bound)
 
 
 def hb_utilization_test(taskset):
     """Utilization-based schedulability test.
 
-    The test was introduced by Bini und Buttazzo 2001 and 2003. It is based on the RM-test of Liu and
-    Layland 1973, but with another utilization bound. According to the so called hyperbolic bound (HB),
-    a task-set is schedulable, if: prod(U_i + 1) <= 2.
-    The utilization of a task is the fraction of processing time and period: U_i = C_i / T_i.
+    The test was introduced by Bini und Buttazzo 2001 and 2003. It is based on the RM-test of Liu
+    and Layland 1973, but with another utilization bound. According to the so called hyperbolic
+    bound (HB), a task-set is schedulable, if: prod(U_i + 1) <= 2. The utilization of a task is the
+    fraction of processing time and period: U_i = C_i / T_i.
 
     Return value:
     True/False -- schedulabilty of task-set
@@ -126,13 +119,10 @@ def hb_utilization_test(taskset):
         # Add utilization-factor of task to total utilization
         total_utilization *= task_utilization
 
-    logger.debug("Total Utilization = " + str(total_utilization))
+    logger.debug("Total Utilization = %f", total_utilization)
 
     # Check schedulability
-    if total_utilization <= 2:  # Task-set is schedulable
-        return True
-    else:  # Task-set is NOT schedulable
-        return False
+    return bool(total_utilization <= 2)
 
 
 if __name__ == "__main__":

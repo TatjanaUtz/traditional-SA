@@ -34,16 +34,16 @@ def rta_audsley(taskset):
         return -1
 
     # Check schedulability of all tasks in the task-set
-    for i in range(len(taskset)):  # Iterate over all tasks
+    for check_task in taskset:  # Iterate over all tasks
         # Get response time of task
-        response_time = _caluclate_response_time_audsley(taskset, taskset[i])
+        response_time = _caluclate_response_time_audsley(taskset, check_task)
 
         # Check schedulability of task
         if response_time == -1:  # an error occurred
             logger.error("Error value returned from _calculate_response_time_audsley()")
             return -1
 
-        if response_time is False or response_time > taskset[i].deadline:
+        if response_time is False or response_time > check_task.deadline:
             # Task-set is NOT schedulable
             return False
 
@@ -136,16 +136,16 @@ def rta_buttazzo(taskset):
         return -1
 
     # Check schedulability of all tasks in the task-set
-    for i in range(len(taskset)):  # Iterate over all tasks
+    for check_task in taskset:  # Iterate over all tasks
         # Get response time of task
-        response_time = _caluclate_response_time_buttazzo(taskset, taskset[i])
+        response_time = _caluclate_response_time_buttazzo(taskset, check_task)
 
         # Check schedulability of task
         if response_time == -1:  # an error occurred
             logger.error("Error value returned from _calculate_response_time_buttazzo()")
             return -1
 
-        if response_time is False or response_time > taskset[i].deadline:
+        if response_time is False or response_time > check_task.deadline:
             # Task-set is NOT schedulable
             return False
 
