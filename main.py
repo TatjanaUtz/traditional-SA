@@ -55,6 +55,11 @@ def start_logging():
     logger.addHandler(log_file_handler)
     logger.addHandler(log_console_handler)
 
+    # Create file to which results should be written to
+    log_file = open(LOG_FILE_NAME, 'w+')
+    log_file.close()
+
+
     # return logger
     return logger
 
@@ -259,10 +264,6 @@ def main():
 
     # Create and initialize logger
     logger = start_logging()
-
-    # Create file if results should be written to file
-    log_file = open(LOG_FILE_NAME, 'w+')
-    log_file.close()
 
     # Read the tests that should be performed (defined by command line arguments)
     test_todo = read_input()
