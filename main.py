@@ -25,7 +25,7 @@ VALID_SA = [simulation.simulate,  # Simulation
             workload.het_workload_test]  # HET workload test
 
 # Name of the output file for results
-LOG_FILE_NAME = "results"
+LOG_FILE_NAME = "results.log"
 
 
 def start_logging():
@@ -266,10 +266,10 @@ def main():
     logger = start_logging()
 
     # Read the tests that should be performed (defined by command line arguments)
-    test_todo = read_input()
+    tests_todo = read_input()
 
-    if test_todo is not None:  # at least one test should be done
-        logger.info("Tests to do: %s \n", [test.__name__ for test in test_todo])
+    if tests_todo is not None:  # at least one test should be done
+        logger.info("Tests to do: %s \n", [test.__name__ for test in tests_todo])
 
         # Create a database object
         my_database = Database()
@@ -283,7 +283,7 @@ def main():
         logger.info("Time elapsed = %f\n", end_time - start_time)
 
         # Iterate through the to-do list and perform tests
-        for test in test_todo:
+        for test in tests_todo:
             start_time = time.time()  # Save start time
             test_dataset(dataset, test)  # Run test
             end_time = time.time()  # Save end time
