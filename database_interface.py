@@ -156,7 +156,7 @@ class Database:
 
         # Limit number of rows
         # rows = rows[555510:556510] + rows[705519:706519]
-        # rows = rows[:100]
+        rows = rows[:5]
 
         # iterate over all rows
         for row in rows:
