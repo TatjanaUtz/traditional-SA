@@ -24,6 +24,7 @@ from simso.schedulers import scheduler
 # Define required task fields - must be added to task description
 @scheduler("fp_edf_scheduler.py",
            required_task_fields=[{'name': 'priority', 'type': 'int', 'default': '0'}])
+
 class fp_edf_scheduler(Scheduler):  # define fp_edf_scheduler as subclass of scheduler
     """The implementation of a scheduler.
 
