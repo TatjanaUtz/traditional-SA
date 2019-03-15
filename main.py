@@ -12,7 +12,7 @@ import simulation
 import utilization
 import workload
 from Taskset import Taskset
-from database import Database
+from database_interface import Database
 
 # valid schedulability analysis tests, that are currently implemented
 VALID_SA = [simulation.simulate,  # Simulation

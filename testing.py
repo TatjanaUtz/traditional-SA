@@ -3,7 +3,7 @@ import logging
 
 import simsogui
 
-from database import Database
+from database_interface import Database
 from workload import het_workload_test
 
 
@@ -27,4 +27,4 @@ if __name__ == "__main__":
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-    test_schedulability_test()
+    start_simso()
