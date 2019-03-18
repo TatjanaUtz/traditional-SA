@@ -272,7 +272,11 @@ def main():
         logger.info("Tests to do: %s \n", [test.__name__ for test in tests_todo])
 
         # Create a database object
-        my_database = Database()
+        try:
+            my_database = Database()
+        except Exception as exc:
+            logger.error('Could not create database object: {}'.format(exc))
+            return
 
         # Read task-sets from database
         logger.info("Reading task-sets from the database...")
