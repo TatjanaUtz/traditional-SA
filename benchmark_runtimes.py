@@ -4,9 +4,7 @@ All successfully ran jobs from the database are read. For each task the maximum,
 execution times are calculated and saved to the database.
 """
 import logging
-
-from database_interface import Database
-
+import database_interface
 
 def benchmark_runtimes(database):
     """ Benchmark test to get execution times of tasks.
@@ -78,4 +76,4 @@ if __name__ == "__main__":
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
     # create database: if table ExecutionTime doesn't exist, the benchmark will be run automatically
-    my_database = Database()
+    my_database = database_interface.Database()
