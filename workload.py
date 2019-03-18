@@ -151,7 +151,7 @@ def rm_workload_test(taskset):
     # This means that if all tasks are schedulable, the task-set is also schedulable and the other
     # way round
     for check_task in taskset:
-        logger.debug("TASK {}".format(check_task.id))
+        logger.debug("TASK {}".format(check_task.task_id))
 
         # Generate task-set with all higher priority tasks and check_task
         hp_taskset = Taskset(tasks=[])
@@ -264,7 +264,7 @@ def het_workload_test(taskset):
 
     # iterate over all tasks in the task-set
     for i in range(1, len(taskset) + 1):
-        logger.debug("TASK %d", taskset[i - 1].id)
+        logger.debug("TASK %d", taskset[i - 1].task_id)
 
         # calculate W_[i-1](T_i)
         w = _W_i_het(i - 1, taskset[i - 1].period, taskset)

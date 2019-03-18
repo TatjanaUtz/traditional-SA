@@ -53,7 +53,7 @@ def simulate(taskset):
     # Add the tasks to the list of tasks
     i = 1
     for task in taskset:
-        task_name = "T" + str(task.id)
+        task_name = "T" + str(task.task_id)
         activation_dates = _get_activation_dates(hyper_period, task.period, task.number_of_jobs)
         configuration.add_task(name=task_name, identifier=i, task_type="Sporadic",
                                period=task.period, activation_date=0, wcet=task.execution_time,
