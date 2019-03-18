@@ -83,6 +83,11 @@ class Database:
         # cursor for working with the database
         self.db_cursor = None
 
+        # check if database exists
+        if not self.check_if_database_exists():
+            # database does not exist at the defined path
+            raise Exception("database '{}' not found in {}".format(self.db_name, self.db_dir))
+
         # check database: check if all necessary tables exist
         check_value, table_name = self.check_database()
         if not check_value:
@@ -97,37 +102,30 @@ class Database:
     def open_db(self):
         """Open the database.
 
-        If the database can be found, a connection and cursor is created and saved.
-        If there is no database file defined through dir and name, an error message is printed.
+        This methods opens the database defined by self.db_dir and self.db_name by creating a
+        database connection and a cursor.
         """
-        # create logger
-        logger = logging.getLogger('traditional-SA.database.open_DB')
-
+        # create full path to the database
         db_path = self.db_dir + "\\" + self.db_name
 
-        # Check if database exists
-        if os.path.exists(db_path):  # database exists
-            self.db_connection = sqlite3.connect(db_path)
-            self.db_cursor = self.db_connection.cursor()
-        else:  # database does not exist
-            logger.error("Database '%s' not found!", self.db_name)
+        # create database connection and a cursor
+        self.db_connection = sqlite3.connect(db_path)
+        self.db_cursor = self.db_connection.cursor()
 
     # Close database
     def close_db(self):
         """Close the database.
 
-        If the database is open, the changes are saved before the database is closed.
+        This method commits the changes to the database and closes it by closing and deleting the
+        database connection and the cursor.
         """
-        # create logger
-        logger = logging.getLogger('traditional-SA.database.close_DB')
+        # commit changes and close connection to the database
+        self.db_connection.commit()
+        self.db_connection.close()
 
-        if self.db_connection is not None:  # database is open
-            self.db_connection.commit()
-            self.db_connection.close()
-            self.db_connection = None
-            self.db_cursor = None
-        else:  # database is already closed
-            logger.debug("No open database!")
+        # delete database connection and cursor
+        self.db_connection = None
+        self.db_cursor = None
 
     # Get dataset
     def get_dataset(self):
@@ -546,15 +544,15 @@ class Database:
             the name of the table which doesn't exist in the database
         """
         # Check table Job
-        if not self.check_if_table_exists('Job'): # table Job does not exist
+        if not self.check_if_table_exists('Job'):  # table Job does not exist
             return False, 'Job'
 
         # Check table Task
-        if not self.check_if_table_exists('Task'): # table Task does not exist
+        if not self.check_if_table_exists('Task'):  # table Task does not exist
             return False, 'Task'
 
         # check table TaskSet
-        if not self.check_if_table_exists('TaskSet'): # table TaskSet does not exist
+        if not self.check_if_table_exists('TaskSet'):  # table TaskSet does not exist
             return False, 'TaskSet'
 
         # Check table ExecutionTimes
@@ -564,6 +562,23 @@ class Database:
 
         # all tables exist
         return True, None
+
+    # check if the database exists
+    def check_if_database_exists(self):
+        """Check if the database file exists.
+
+        This method checks if the database defined by self.db_dir and self.db_name exists.
+
+        Return:
+            True/False -- whether the database exists
+        """
+        # create full path to database
+        db_path = self.db_dir + "\\" + self.db_name
+
+        # Check if database exists
+        if os.path.exists(db_path):  # database exists
+            return True
+        return False
 
 
 if __name__ == "__main__":
