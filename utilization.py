@@ -28,15 +28,8 @@ def basic_utilization_test(taskset):
 
     # Iterate over all tasks
     for task in taskset:
-        if task.deadline < task.period:  # deadline is smaller than period
-            # Calculate utilization-factor of task with deadline
-            task_utilization = task.execution_time / task.deadline
-        elif task.period < task.deadline:  # period is smaller than deadline
-            # Calculate utilization-factor of task with period
-            task_utilization = task.execution_time / task.period
-        else:  # deadline and period are equal
-            # Calculate utilization-factor of task
-            task_utilization = task.execution_time / task.period
+        # Calculate utilization-factor of task
+        task_utilization = task.execution_time / min(task.deadline, task.period)
 
         # Add utilization-factor of task to total utilization
         total_utilization += task_utilization
@@ -123,9 +116,3 @@ def hb_utilization_test(taskset):
 
     # Check schedulability
     return bool(total_utilization <= 2)
-
-
-if __name__ == "__main__":
-    # Configure logging: format should be "LEVELNAME: Message",
-    # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
