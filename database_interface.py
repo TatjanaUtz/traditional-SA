@@ -6,6 +6,7 @@ import sqlite3  # for working with the database
 
 from Task import Task  # for creating tasks
 from Taskset import Taskset  # for creating task-sets
+from benchmark_runtimes import benchmark_runtimes
 
 # task execution times
 EXECUTION_TIME_DICT = {
@@ -82,6 +83,12 @@ class Database:
         # cursor for working with the database
         self.db_cursor = None
 
+        # check database: check if all necessary tables exist
+        check_value, table_name = self.check_database()
+        if not check_value:
+            # something is not correct with the database: at least one table is missing
+            raise Exception("no such table: " + table_name)
+
         # dictionary with execution times of all tasks
         self.execution_time_dict = EXECUTION_TIME_DICT
         self.read_execution_times()
@@ -135,12 +142,10 @@ class Database:
         # create logger
         logger = logging.getLogger('traditional-SA.database.get_dataset')
 
-        # Open database if not connected
-        if self.db_connection is None or self.db_cursor is None:
-            self.open_db()
-
         # Read execution times from the database
         self.read_execution_times()
+
+        self.open_db()  # open database
 
         # Read all task-sets from the database
         self.db_cursor.execute("SELECT * FROM TaskSet")
@@ -457,9 +462,7 @@ class Database:
         # create logger
         logger = logging.getLogger('traditional-SA.database.read_execution_times')
 
-        # open database if not connected
-        if self.db_connection is None or self.db_cursor is None:
-            self.open_db()
+        self.open_db()  # open database
 
         # read table ExecutionTimes
         self.db_cursor.execute("SELECT * FROM ExecutionTimes")
@@ -494,6 +497,73 @@ class Database:
 
             # update dictionary
             self.execution_time_dict.update(dict_entry)
+
+    # check if a table exists in the database
+    def check_if_table_exists(self, table_name):
+        """Check if a table exists in the database.
+
+        This method checks if the table defined by table_name exists in the database. This is done
+        by executing a SQL query and evaluate the fetched rows. If nothing could be fetched (no rows
+        available), the table doesn't exist.
+
+        Args:
+            table_name -- name of the table that should be checked
+        Return:
+            True/False -- whether the table exists/doesn't exist in the database
+        """
+        self.open_db()  # open database
+
+        # execute the following query to determine if the table exists
+        sql_query = "SELECT * from sqlite_master " \
+                    "WHERE type = 'table' AND name = '{}'".format(table_name)
+        self.db_cursor.execute(sql_query)
+
+        # fetch all rows
+        rows = self.db_cursor.fetchall()
+
+        if not rows:  # no row could be fetched - table doesn't exist
+            self.close_db()  # close database
+            return False
+
+        # at least one row was fetched - table exists
+        self.close_db()  # close database
+        return True
+
+    # check the database
+    def check_database(self):
+        """Check the database.
+
+        This method checks the database, i.e. if all necessary tables are present. The necessary
+        tables are
+            ExecutionTimes
+            Job
+            Task
+            TaskSet
+        If a table does not exist in the database, it is created (if possible).
+
+        Return:
+            True/False -- whether all necessary tables exist
+            the name of the table which doesn't exist in the database
+        """
+        # Check table Job
+        if not self.check_if_table_exists('Job'): # table Job does not exist
+            return False, 'Job'
+
+        # Check table Task
+        if not self.check_if_table_exists('Task'): # table Task does not exist
+            return False, 'Task'
+
+        # check table TaskSet
+        if not self.check_if_table_exists('TaskSet'): # table TaskSet does not exist
+            return False, 'TaskSet'
+
+        # Check table ExecutionTimes
+        if not self.check_if_table_exists('ExecutionTimes'):
+            # table ExecutionTime does not exist: create it through benchmark
+            benchmark_runtimes(self)
+
+        # all tables exist
+        return True, None
 
 
 if __name__ == "__main__":
