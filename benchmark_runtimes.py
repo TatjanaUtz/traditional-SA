@@ -8,22 +8,22 @@ import logging
 from database_interface import Database
 
 
-def benchmark_runtimes():
+def benchmark_runtimes(database):
     """ Benchmark test to get execution times of tasks.
 
     Reads all jobs of all tasks from the database and calculates the minimum, maximum and average
     execution time of each task defined by PKG and for each combination of PKG and arg.
+
+    Args:
+        database -- the database object
     """
     # create logger
     logger = logging.getLogger('traditional-SA.benchmark_runtimes.benchmark_runtimes')
 
-    # create database object
-    my_database = Database()
-
-    logger.debug("Starting to benchmark runtimes...")
+    logger.info("Starting to benchmark runtimes...")
 
     # Get all tasks from the database
-    task_list = my_database.get_all_tasks()
+    task_list = database.get_all_tasks()
 
     # create empty dictionary
     task_dict = dict()
@@ -37,7 +37,7 @@ def benchmark_runtimes():
             task_dict[(task.pkg, task.arg)] = []  # add (pkg, arg)
 
         # get execution times of all jobs of the current task
-        job_list = my_database.get_jobs_c_of_task(task.id)
+        job_list = database.get_jobs_c_of_task(task.task_id)
 
         # add execution times to the dictionary
         if job_list is not -1:  # at least one job was found
@@ -64,12 +64,12 @@ def benchmark_runtimes():
     for key in delete_keys:
         del task_dict[key]
 
-    logger.debug("Saving calculated execution times to database...")
+    logger.info("Saving calculated execution times to database...")
 
     # save execution times to database
-    my_database.save_execution_times(task_dict)
+    database.save_execution_times(task_dict)
 
-    logger.debug("Saving successful! Benchmark finished!")
+    logger.info("Saving successful! Benchmark finished!")
 
 
 if __name__ == "__main__":
@@ -77,4 +77,5 @@ if __name__ == "__main__":
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-    benchmark_runtimes()
+    # create database: if table ExecutionTime doesn't exist, the benchmark will be run automatically
+    my_database = Database()
