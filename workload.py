@@ -9,121 +9,6 @@ from Task import Task
 from Taskset import Taskset
 
 
-def _get_scheduling_points(hp_taskset, check_task):
-    """Get scheduling points of a task-set.
-
-    This method generates a list of scheduling points for a given task-set.
-    The set of scheduling points S_i for a task-set with tau_i and all higher priority tasks is
-    defined as: S_i = { k * T_j | j = 1, ..., i; k = 1, ..., lfloor(T_i / T_j)rfloor }.
-    The set includes the deadline of tau_i and all the arrival times of tasks with higher priority
-    than tau_i before the deadline of tau_i.
-
-    Args:
-        hp_taskset -- task-set with all higher priority tasks
-        check_task -- the task that is checked
-    Return:
-        list with scheduling points
-        -1 -- an error occurred
-    """
-    # create logger
-    logger = logging.getLogger('traditional-SA.workload._get_scheduling_points')
-
-    # Check input arguments
-    if not isinstance(hp_taskset, Taskset):  # invalid input argument for hp_taskset
-        logger.error("Invalid input argument for hp_taskset (must be Taskset)!")
-        return -1
-    if not isinstance(check_task, Task):  # invalid input argument for check_task
-        logger.error("Invalid input argument for check_task (must be Task)!")
-        return -1
-
-    # Create empty list of scheduling points
-    scheduling_points = []
-
-    # Iterate over all tasks in the hp-task-set
-    for task in hp_taskset:
-        k_max = math.floor(check_task.period / task.period)
-
-        # Iterate over all k = 1, ..., k_max
-        k = 1
-        while k <= k_max:
-            new_scheduling_point = k * task.period
-            if new_scheduling_point not in scheduling_points:
-                scheduling_points.append(new_scheduling_point)
-            k += 1
-
-    # Sort scheduling points according to increasing values
-    scheduling_points.sort()
-
-    return scheduling_points
-
-
-def _workload_i(t, taskset):
-    """ Calculate workload.
-
-    This method calculates the workload of a task tau_i for a scheduling point t.
-    W_i(t) = sum_from(j=1)_to(i) { lceil(t / T_j)rceil * C_j }
-
-    Args:
-        t -- scheduling point
-        taskset -- task-set with all tasks that should be considered for calculation (= tau_i and
-                   all tasks with higher priority)
-    Return:
-        the workload of the given task-set at scheduling point t
-        -1 -- an error occurred
-    """
-    # create logger
-    logger = logging.getLogger('traditional-SA.workload._W_i')
-
-    # Check input arguments
-    if not isinstance(t, int):  # invalid input argument for t
-        logger.error("Invalid input argument for t (must be int)!")
-        return -1
-    if not isinstance(taskset, Taskset):  # invalid input argument for taskset
-        logger.error("Invalid input argument for taskset (must be Taskset)!")
-        return -1
-
-    # Calculate workload
-    w_i = 0
-    for task in taskset:
-        w_i += math.ceil(t / task.period) * task.execution_time
-
-    logger.debug("W_i(%d) = %f", t, w_i)
-
-    return w_i
-
-
-def _L_i(t, taskset):
-    """Calculate L_i(t).
-
-    This method calculates L_i(t) according to the following formula:
-    L_i(t) = W_i(t) / t
-
-    Args:
-        t -- scheduling point
-        taskset -- task-set with all relevant tasks (= tau_i and all tasks with higher priority)
-    Return:
-        L_i(t)
-        -1 -- an error occurred
-    """
-    # create logger
-    logger = logging.getLogger('traditional-SA.workload._L_i')
-
-    # Check input arguments
-    if not isinstance(t, int):  # invalid input argument for t
-        logger.error("Invalid input argument for t (must be int)!")
-        return -1
-    if not isinstance(taskset, Taskset):  # invalid input argument for taskset
-        logger.error("Invalid input argument for taskset (must be Taskset)!")
-        return -1
-
-    # Calculate L_i(t)
-    l_i = _workload_i(t, taskset) / t
-
-    logger.debug("L_i(%f) = %f", t, l_i)
-
-    return l_i
-
-
 def rm_workload_test(taskset):
     """Workload test.
 
@@ -136,20 +21,17 @@ def rm_workload_test(taskset):
         taskset -- the task-set that should be tested for schedulability
     Return:
         True/False -- schedulability of the task-set
-        -1 -- an error occurred
     """
     # create logger
     logger = logging.getLogger('traditional-SA.workload.rm_workload_test')
 
     # Check input argument
     if not isinstance(taskset, Taskset):  # invalid input argument
-        logger.error("Invalid input argument for taskset (must be Taskset)!")
-        return -1
+        raise ValueError("taskset must be of type Taskset")
 
     # Iterate over all tasks and check schedulability of tasks
     # The task-set is schedulable if L = max(L_i) <= 1
-    # This means that if all tasks are schedulable, the task-set is also schedulable and the other
-    # way round
+    # This means that if all tasks are schedulable, the task-set is also schedulable
     for check_task in taskset:
         logger.debug("TASK {}".format(check_task.task_id))
 
@@ -182,6 +64,108 @@ def rm_workload_test(taskset):
     return True
 
 
+def _get_scheduling_points(hp_taskset, check_task):
+    """Get scheduling points of a task-set.
+
+    This method generates a list of scheduling points for a given task-set.
+    The set of scheduling points S_i for a task-set with tau_i and all higher priority tasks is
+    defined as: S_i = { k * T_j | j = 1, ..., i; k = 1, ..., lfloor(T_i / T_j)rfloor }.
+    The set includes the deadline of tau_i and all the arrival times of tasks with higher priority
+    than tau_i before the deadline of tau_i.
+
+    Args:
+        hp_taskset -- task-set with all higher priority tasks
+        check_task -- the task that is checked
+    Return:
+        list with scheduling points
+    """
+    # Check input arguments
+    if not isinstance(hp_taskset, Taskset):  # invalid input argument for hp_taskset
+        raise ValueError("hp_taskset must be of type Taskset")
+    if not isinstance(check_task, Task):  # invalid input argument for check_task
+        raise ValueError("check_task must be of type Task")
+
+    # Create empty list of scheduling points
+    scheduling_points = []
+
+    # Iterate over all tasks in the hp-task-set
+    for task in hp_taskset:
+        k_max = math.floor(check_task.period / task.period)
+
+        # Iterate over all k = 1, ..., k_max
+        k = 1
+        while k <= k_max:
+            new_scheduling_point = k * task.period
+            if new_scheduling_point not in scheduling_points:
+                scheduling_points.append(new_scheduling_point)
+            k += 1
+
+    # Sort scheduling points according to increasing values
+    scheduling_points.sort()
+
+    return scheduling_points
+
+
+def _L_i(t, taskset):
+    """Calculate L_i(t).
+
+    This method calculates L_i(t) according to the following formula:
+    L_i(t) = W_i(t) / t
+
+    Args:
+        t -- scheduling point
+        taskset -- task-set with all relevant tasks (= tau_i and all tasks with higher priority)
+    Return:
+        L_i(t)
+    """
+    # create logger
+    logger = logging.getLogger('traditional-SA.workload._L_i')
+
+    # Check input arguments
+    if not isinstance(t, int):  # invalid input argument for t
+        raise ValueError("t must be of type int")
+    if not isinstance(taskset, Taskset):  # invalid input argument for taskset
+        raise ValueError("taskset must be of type Taskset")
+
+    # Calculate L_i(t)
+    l_i = _workload_i(t, taskset) / t
+    logger.debug("L_i(%f) = %f", t, l_i)
+
+    return l_i
+
+
+def _workload_i(t, taskset):
+    """ Calculate workload.
+
+    This method calculates the workload of a task tau_i for a scheduling point t.
+    W_i(t) = sum_from(j=1)_to(i) { lceil(t / T_j)rceil * C_j }
+
+    Args:
+        t -- scheduling point
+        taskset -- task-set with all tasks that should be considered for calculation (= tau_i and
+                   all tasks with higher priority)
+    Return:
+        the workload of the given task-set at scheduling point t
+    """
+    # create logger
+    logger = logging.getLogger('traditional-SA.workload._W_i')
+
+    # Check input arguments
+    if not isinstance(t, int):  # invalid input argument for t
+        raise ValueError("t must be of type int")
+    if not isinstance(taskset, Taskset):  # invalid input argument for taskset
+        raise ValueError("taskset must be of type Taskset")
+
+    # Calculate workload
+    w_i = 0
+    for task in taskset:
+        w_i += math.ceil(t / task.period) * task.execution_time
+
+    logger.debug("W_i(%d) = %f", t, w_i)
+
+    return w_i
+
+
 _last_psi = []
 _last_workload = []
 
@@ -205,14 +189,11 @@ def _W_i_het(i, b, taskset):
 
     # Check input arguments
     if not isinstance(i, int) or i > len(taskset):  # invalid input argument for i
-        logger.error("Invalid input argument for i (must be int and in taskset)!")
-        return -1
+        raise ValueError("i must be of type int and in taskset")
     if not isinstance(b, int):  # invalid input argument for D_i
-        logger.error("Invalid input argument for b (must be int)!")
-        return -1
+        raise ValueError("b must be of type int")
     if not isinstance(taskset, Taskset):  # invalid input argument for taskset
-        logger.error("Invalid input argument for taskset (must be Taskset)!")
-        return -1
+        raise ValueError("taskset must be of type Taskset")
 
     if i <= 0:  # W_0(T_1) = 0
         return 0
@@ -254,8 +235,7 @@ def het_workload_test(taskset):
 
     # Check input argument
     if not isinstance(taskset, Taskset):  # invalid input argument
-        logger.error("Invalid input argument for taskset (must be Taskset)!")
-        return -1
+        raise ValueError("taskset must be of type Taskset")
 
     # clear list with already computed workload values
     global _last_psi, _last_workload
