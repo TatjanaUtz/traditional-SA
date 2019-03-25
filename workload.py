@@ -166,58 +166,6 @@ def _workload_i(t, taskset):
     return w_i
 
 
-_last_psi = []
-_last_workload = []
-
-
-def _W_i_het(i, b, taskset):
-    """Calculate workload.
-    This method calculates the workload of a task tau_i for its deadline T_i.
-    W_[i-1](T_i) = min( sum( ceil(t / T_j) * C_j ) + (T_i - t) )
-    The minimum is built over all scheduling points t.
-    Implementation according to [BB01].
-
-    Args:
-        i -- position of the task in the task-set
-        b -- the period of the task
-    Return:
-        the workload of the given task-set at T_i
-        -1 -- an error occurred
-    """
-    # create logger
-    logger = logging.getLogger('traditional-SA.workload._W_i_het')
-
-    # Check input arguments
-    if not isinstance(i, int) or i > len(taskset):  # invalid input argument for i
-        raise ValueError("i must be of type int and in taskset")
-    if not isinstance(b, int):  # invalid input argument for D_i
-        raise ValueError("b must be of type int")
-    if not isinstance(taskset, Taskset):  # invalid input argument for taskset
-        raise ValueError("taskset must be of type Taskset")
-
-    if i <= 0:  # W_0(T_1) = 0
-        return 0
-
-    global _last_psi, _last_workload
-    if b <= _last_psi[i]:  # if W(i, b) already computed
-        logger.debug("W(%d, %d) already computed", i, b)
-        return _last_workload[i]  # don't go further
-
-    f = math.floor(b / taskset[i - 1].period)
-    c = math.ceil(b / taskset[i - 1].period)
-    logger.debug("f = %d \t c = %d", f, c)
-
-    branch0 = b - f * (taskset[i - 1].period - taskset[i - 1].execution_time) + \
-              _W_i_het(i - 1, f * taskset[i - 1].period, taskset)
-    branch1 = c * taskset[i - 1].execution_time + _W_i_het(i - 1, b, taskset)
-    logger.debug("branch0 = %f \t branch1 = %f", branch0, branch1)
-
-    _last_psi[i] = b
-    _last_workload[i] = min(branch0, branch1)
-
-    return _last_workload[i]
-
-
 def het_workload_test(taskset):
     """Hyperplanes Exact Test (HET).
 
@@ -228,7 +176,6 @@ def het_workload_test(taskset):
     taskset -- the task-set that should be tested for schedulability
     Return:
     True/False -- schedulability of the task-set
-    -1 -- an error occurred
     """
     # create logger
     logger = logging.getLogger('traditional-SA.workload.het_workload_test')
@@ -267,7 +214,53 @@ def het_workload_test(taskset):
     return True
 
 
-if __name__ == "__main__":
-    # Configure logging: format should be "LEVELNAME: Message",
-    # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+_last_psi = []
+_last_workload = []
+
+
+def _W_i_het(i, b, taskset):
+    """Calculate workload.
+    This method calculates the workload of a task tau_i for its deadline T_i.
+    W_[i-1](T_i) = min( sum( ceil(t / T_j) * C_j ) + (T_i - t) )
+    The minimum is built over all scheduling points t.
+    Implementation according to [BB01].
+
+    Args:
+        i -- position of the check-task in the task-set
+        b -- the period of the task
+    Return:
+        the workload of the given task-set at T_i
+        -1 -- an error occurred
+    """
+    # create logger
+    logger = logging.getLogger('traditional-SA.workload._W_i_het')
+
+    # Check input arguments
+    if not isinstance(i, int) or i > len(taskset):  # invalid input argument for i
+        raise ValueError("i must be of type int and in taskset")
+    if not isinstance(b, int):  # invalid input argument for D_i
+        raise ValueError("b must be of type int")
+    if not isinstance(taskset, Taskset):  # invalid input argument for taskset
+        raise ValueError("taskset must be of type Taskset")
+
+    if i <= 0:  # W_0(T_1) = 0
+        return 0
+
+    global _last_psi, _last_workload
+    if b <= _last_psi[i]:  # if W(i, b) already computed
+        logger.debug("W(%d, %d) already computed", i, b)
+        return _last_workload[i]  # don't go further
+
+    f = math.floor(b / taskset[i - 1].period)
+    c = math.ceil(b / taskset[i - 1].period)
+    logger.debug("f = %d \t c = %d", f, c)
+
+    branch0 = b - f * (taskset[i - 1].period - taskset[i - 1].execution_time) + \
+              _W_i_het(i - 1, f * taskset[i - 1].period, taskset)
+    branch1 = c * taskset[i - 1].execution_time + _W_i_het(i - 1, b, taskset)
+    logger.debug("branch0 = %f \t branch1 = %f", branch0, branch1)
+
+    _last_psi[i] = b
+    _last_workload[i] = min(branch0, branch1)
+
+    return _last_workload[i]
