@@ -169,13 +169,13 @@ def _workload_i(t, taskset):
 def het_workload_test(taskset):
     """Hyperplanes Exact Test (HET).
 
-    A task-set is schedulable if for all tasks C_i + W_[i-1](T_i) <= T_i is fullfilled.
-    Implementation according to [BB01].
+    A task-set is schedulable if for all tasks C_i + W_[i-1](D_i) <= T_i is fullfilled.
+    Implementation according to [BB04].
 
     Args:
-    taskset -- the task-set that should be tested for schedulability
+        taskset -- the task-set that should be tested for schedulability
     Return:
-    True/False -- schedulability of the task-set
+        True/False -- schedulability of the task-set
     """
     # create logger
     logger = logging.getLogger('traditional-SA.workload.het_workload_test')
@@ -194,8 +194,8 @@ def het_workload_test(taskset):
         logger.debug("TASK %d", taskset[i - 1].task_id)
 
         # calculate W_[i-1](T_i)
-        w = _W_i_het(i - 1, taskset[i - 1].period, taskset)
-        logger.debug("W_%d(%d) = %d", i - 1, taskset[i - 1].period, w)
+        w = _W_i_het(i - 1, taskset[i - 1].deadline, taskset)
+        logger.debug("W_%d(%d) = %d", i - 1, taskset[i - 1].deadline, w)
 
         # add computation time of check_task
         workload_sum = taskset[i - 1].execution_time + w
