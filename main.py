@@ -25,7 +25,7 @@ VALID_SA = [simulation.simulate,  # Simulation
             workload.het_workload_test]  # HET workload test
 
 # Name of the output file for results
-LOG_FILE_NAME = "results.log"
+LOG_FILE_NAME = "final_results.log"
 
 
 def start_logging():
