@@ -33,18 +33,18 @@ def rm_workload_test(taskset):
     # The task-set is schedulable if L = max(L_i) <= 1
     # This means that if all tasks are schedulable, the task-set is also schedulable
     for check_task in taskset:
-        logger.debug("TASK {}".format(check_task.task_id))
+        logger.debug("TASK %d", check_task.task_id)
 
         # Generate task-set with all higher priority tasks and check_task
         hp_taskset = Taskset(tasks=[])
         for task in taskset:
             if task.priority <= check_task.priority:
                 hp_taskset.add_task(task)
-        logger.debug("hp-set = " + str(hp_taskset))
+        logger.debug("hp-set = %s", hp_taskset)
 
         # Get scheduling points
         scheduling_points = _get_scheduling_points(hp_taskset, check_task)
-        logger.debug("Scheduling points = " + str(scheduling_points))
+        logger.debug("Scheduling points = %s", scheduling_points)
 
         # Iterate over all scheduling points and calculate L_i(t)
         # A task is schedulable if L_i = min(L_i(t)) <= 1
@@ -52,7 +52,7 @@ def rm_workload_test(taskset):
         for t in scheduling_points:
             l_i = _L_i(t, hp_taskset)
             if l_i <= 1:  # task is schedulable, stop iteration and check next task in task-set
-                logger.debug("L_i({}) <= 1 -> task schedulable".format(t))
+                logger.debug("L_i(%d) <= 1 -> task schedulable", t)
                 break
         else:  # the condition was not meet for any scheduling point:
             # task not schedulable -> task-set not schedulable
