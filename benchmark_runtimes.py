@@ -17,7 +17,6 @@ def benchmark_runtimes(database):
     """
     # create logger
     logger = logging.getLogger('traditional-SA.benchmark_runtimes.benchmark_runtimes')
-
     logger.info("Starting to benchmark runtimes...")
 
     # Get all tasks from the database
@@ -68,12 +67,3 @@ def benchmark_runtimes(database):
     database.save_execution_times(task_dict)
 
     logger.info("Saving successful! Benchmark finished!")
-
-
-if __name__ == "__main__":
-    # Configure logging: format should be "LEVELNAME: Message",
-    # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
-
-    # create database: if table ExecutionTime doesn't exist, the benchmark will be run automatically
-    my_database = database_interface.Database()

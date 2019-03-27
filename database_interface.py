@@ -84,12 +84,12 @@ class Database:
         self.db_cursor = None
 
         # check if database exists
-        if not self.check_if_database_exists():
+        if not self._check_if_database_exists():
             # database does not exist at the defined path
             raise Exception("database '{}' not found in {}".format(self.db_name, self.db_dir))
 
         # check database: check if all necessary tables exist
-        check_value, table_name = self.check_database()
+        check_value, table_name = self._check_database()
         if not check_value:
             # something is not correct with the database: at least one table is missing
             raise Exception("no such table: " + table_name)
@@ -98,8 +98,7 @@ class Database:
         self.execution_time_dict = EXECUTION_TIME_DICT
         self.read_execution_times()
 
-    # Open database
-    def open_db(self):
+    def _open_db(self):
         """Open the database.
 
         This methods opens the database defined by self.db_dir and self.db_name by creating a
@@ -112,8 +111,7 @@ class Database:
         self.db_connection = sqlite3.connect(db_path)
         self.db_cursor = self.db_connection.cursor()
 
-    # Close database
-    def close_db(self):
+    def _close_db(self):
         """Close the database.
 
         This method commits the changes to the database and closes it by closing and deleting the
@@ -127,108 +125,234 @@ class Database:
         self.db_connection = None
         self.db_cursor = None
 
-    # Get dataset
-    def get_dataset(self):
-        """Get a dataset.
+    def _check_if_database_exists(self):
+        """Check if the database file exists.
 
-        Reads all task-sets from the database.
-        Return values:
-            list with task-sets as Taskset-Objects
-            None -- dataset is empty
-            -1 -- an error occurred
+        This method checks if the database defined by self.db_dir and self.db_name exists.
+
+        Return:
+            True/False -- whether the database exists
+        """
+        # create full path to database
+        db_path = self.db_dir + "\\" + self.db_name
+
+        # Check if database exists
+        if os.path.exists(db_path):  # database exists
+            return True
+        return False
+
+    def _check_database(self):
+        """Check the database.
+
+        This method checks the database, i.e. if all necessary tables are present. The necessary
+        tables are
+            Job
+            Task
+            TaskSet
+            ExecutionTimes
+        If a table does not exist in the database, it is created (if possible).
+
+        Return:
+            True/False -- whether all necessary tables exist
+            the name of the table which doesn't exist in the database
+        """
+        # Check table Job
+        if not self._check_if_table_exists('Job'):  # table Job does not exist
+            return False, 'Job'
+
+        # Check table Task
+        if not self._check_if_table_exists('Task'):  # table Task does not exist
+            return False, 'Task'
+
+        # check table TaskSet
+        if not self._check_if_table_exists('TaskSet'):  # table TaskSet does not exist
+            return False, 'TaskSet'
+
+        # Check table ExecutionTimes
+        if not self._check_if_table_exists('ExecutionTimes'):
+            # table ExecutionTime does not exist: create it through benchmark
+            benchmark_runtimes(self)
+
+        # all tables exist
+        return True, None
+
+    def _check_if_table_exists(self, table_name):
+        """Check if a table exists in the database.
+
+        This method checks if the table defined by table_name exists in the database. This is done
+        by executing a SQL query and evaluate the fetched rows. If nothing could be fetched (no rows
+        available), the table doesn't exist.
+
+        Args:
+            table_name -- name of the table that should be checked
+        Return:
+            True/False -- whether the table exists/doesn't exist in the database
+        """
+        self._open_db()  # open database
+
+        # execute the following query to determine if the table exists
+        sql_query = "SELECT * from sqlite_master " \
+                    "WHERE type = 'table' AND name = '{}'".format(table_name)
+        self.db_cursor.execute(sql_query)
+
+        # fetch all rows
+        rows = self.db_cursor.fetchall()
+
+        if not rows:  # no row could be fetched - table doesn't exist
+            self._close_db()  # close database
+            return False
+
+        # at least one row was fetched - table exists
+        self._close_db()  # close database
+        return True
+
+    ###############################
+
+    def get_dataset(self):
+        """Create a dataset of task-sets.
+
+        This method reads all task-sets from the table TaskSet and creates a dataset with them.
+
+        Return:
+            dataset -- list with task-sets as Taskset-objects
         """
         # create logger
         logger = logging.getLogger('traditional-SA.database.get_dataset')
 
-        # Read execution times from the database
-        self.read_execution_times()
-
-        self.open_db()  # open database
-
-        # Read all task-sets from the database
+        # read table 'TaskSet'
+        self._open_db()  # open database
+        # read all task-sets
         self.db_cursor.execute("SELECT * FROM TaskSet")
         rows = self.db_cursor.fetchall()
+        self._close_db()  # close database
 
-        self.close_db()  # close database
-
-        dataset = []  # create empty list
-
-        if not rows:  # dataset is empty
-            logger.debug("The dataset is empty!")
+        if not rows:  # no task-set read
+            logger.debug("No task-set read!")
             return None
 
         # Limit number of rows
-        # rows = rows[555510:556510] + rows[705519:706519]
-        # rows = rows[:5]
+        rows = rows[:5]
+
+        # read table 'Task': get dictionary with task attributes
+        # (key = task ID, value = Task object)
+        task_attributes = self._read_table_task()
+
+        dataset = []  # create empty list
 
         # iterate over all rows
         for row in rows:
+            # split taskset ID, label and taskset IDs
             taskset_id = row[0]
-            result = row[1]
+            label = row[1]
             task_ids = row[2:]
 
-            # Create empty task-set
-            new_taskset = Taskset(taskset_id=taskset_id, result=result, tasks=[])
+            # create empty task-set
+            new_taskset = Taskset(taskset_id=taskset_id, result=label, tasks=[])
 
-            # iterate over all tasks and create task-set
+            # iterate over all tasks and add them to the task-set
             for task_id in task_ids:
                 if task_id != -1:  # valid task-id
-                    new_task = self.get_task(task_id)  # get task from database
+                    new_task = task_attributes[task_id]  # get task
                     new_taskset.add_task(new_task)  # add task to task-set
 
-            # Add task-set to dataset
+            # add task-set to dataset
             dataset.append(new_taskset)
 
-        # return created dataset
         return dataset
 
-    # Get task-set
+    def _read_table_task(self):
+        """Read the table Task.
+
+        Read all rows and columns from the table Task and save the task attributes as a dictionary
+        with    key = Task_ID
+                value = object of class Task.
+
+        Return:
+            task_attributes -- dictionary with the task attributes
+        """
+        # create logger
+        logger = logging.getLogger("traditional-SA.database_interface.read_table_task")
+
+        self._open_db()  # open database
+        # read all tasks
+        self.db_cursor.execute("SELECT * FROM Task")
+        rows = self.db_cursor.fetchall()
+        self._close_db()  # close database
+
+        if not rows:  # no task read
+            logger.debug("No task read!")
+            return None
+
+        task_attributes = dict()  # create empty dictionary
+
+        for row in rows:  # iterate over all rows
+            # extract task attributes
+            task_id = row[0]
+            priority = row[1]
+            pkg = row[5]
+            arg = row[6]
+            deadline = row[9]
+            period = row[10]
+            number_of_jobs = row[11]
+
+            # define execution time depending on pkg and arg
+            if (pkg, arg) in self.execution_time_dict:  # combination of pkg and arg exists
+                execution_time = self.execution_time_dict[(pkg, arg)][self.c_type]
+            else:  # combination of pkg and arg does not exist
+                # use only pkg to determine execution time
+                execution_time = self.execution_time_dict[pkg][self.c_type]
+
+            # Create new task
+            new_task = Task(task_id=task_id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
+                            period=period, number_of_jobs=number_of_jobs,
+                            execution_time=execution_time)
+
+            # add task to dictionary
+            task_attributes[task_id] = new_task
+
+        return task_attributes
+
+    ################################
+
+    # TODO: can be deleted if testing.py is deleted
     def get_taskset(self, taskset_id=0):
         """Get a task-set.
 
-        Read a task-set from the database. If no id is given, the first task-set is returned.
+        Read a task-set from the database. If no ID is given, the first task-set is returned.
 
         Input arguments:
-            taskset_id -- index of the task-set, corresponds to id of task-set (column Set-ID)
+            taskset_id -- index of the task-set, corresponds to ID of task-set (column Set-ID)
         Return value:
             the task-set
-            None -- no task-set with given id found
-            -1 -- an error occurred
         """
         # create logger
         logger = logging.getLogger('traditional-SA.database.get_taskset')
 
         # Check input argument - must be a positive integer number
         if not isinstance(taskset_id, int) or taskset_id < 0:  # invalid input
-            logger.error("Invalid input argument - must be an positive int!")
-            return -1
+            raise ValueError("Invalid input argument - must be an positive int!")
 
-        # Open database if not connected
-        if self.db_connection is None or self.db_cursor is None:
-            self.open_db()
-
-        # Read the task-set from the database
+        self._open_db()  # open database
+        # read the task-set from the database
         self.db_cursor.execute("SELECT * FROM TaskSet WHERE Set_ID = ?", (taskset_id,))
         row = self.db_cursor.fetchall()
-
-        self.close_db()  # close database
+        self._close_db()  # close database
 
         if not row:  # no task-set with Set_ID = id found
             logger.debug("No task-set with ID = %d found!", taskset_id)
             return None
 
         if len(row) > 1:  # more than one task-set with Set_ID = id found
-            logger.error("Something is wrong - more than one task-set with ID = %d found",
-                         taskset_id)
-            return -1
+            raise ValueError("Something is wrong - more than one task-set with ID = %d found",
+                             taskset_id)
 
         # one task-set was found: extract task-set attributes
         taskset_id = row[0][0]
-        result = row[0][1]
+        label = row[0][1]
         task_ids = row[0][2:]
 
         # Create empty task-set
-        new_taskset = Taskset(taskset_id=taskset_id, result=result, tasks=[])
+        new_taskset = Taskset(taskset_id=taskset_id, result=label, tasks=[])
 
         # Iterate over all tasks and create task-set
         for task_id in task_ids:
@@ -239,45 +363,36 @@ class Database:
         # return created task-set
         return new_taskset
 
-    # Get task
+    # TODO: can be deleted if get_taskset is deleted
     def get_task(self, task_id):
         """Read a task from the database.
 
-        Extracts the attributes of a task with the Task-ID defined by id and creates a new
-        task-object.
+        Extracts the attributes of a task with the Task-ID defined by task_id and creates a new
+        object of class Task.
         Input arguments:
             task_id -- id of the task, corresponds to Task_ID
         Return values:
             task
-            None -- no task found
-            -1 -- an error occurred
         """
         # create logger
         logger = logging.getLogger('traditional-SA.database.get_task')
 
         # Check input argument - must be a positive integer number
         if not isinstance(task_id, int) or task_id < 0:  # invalid input
-            logger.error("Invalid input argument - must be an positive int!")
-            return -1
+            raise ValueError("task_id must be of type int")
 
-        # Open database if not connected
-        if self.db_connection is None or self.db_cursor is None:
-            self.open_db()
-
+        self._open_db()  # open database
         # Read the task defined by id
         self.db_cursor.execute("SELECT * FROM Task WHERE Task_ID = ?", (task_id,))
         row = self.db_cursor.fetchall()
-
-        self.close_db()  # close database
+        self._close_db()  # close database
 
         # Check number of rows
         if not row:  # no task with Task_ID = id found
             logger.debug("No task with Task_ID = %d found!", task_id)
             return None
-
         if len(row) > 1:  # more than one task with Task_ID = id found
-            logger.error("More than one task with Task_ID = %d found!", task_id)
-            return -1
+            raise ValueError("More than one task with Task_ID = %d found!", task_id)
 
         # one task was found: extract attributes of the task
         task_id = row[0][0]
@@ -302,7 +417,6 @@ class Database:
         # Return created task
         return new_task
 
-    # get all tasks
     def get_all_tasks(self):
         """Read all tasks from the database.
 
@@ -316,14 +430,14 @@ class Database:
 
         # open database if not connected
         if self.db_connection is None or self.db_cursor is None:
-            self.open_db()
+            self._open_db()
 
         # read all tasks
         self.db_cursor.execute("SELECT * FROM Task")
         rows = self.db_cursor.fetchall()
 
         # close database
-        self.close_db()
+        self._close_db()
 
         # check number of rows
         if not rows:  # no tasks found
@@ -370,7 +484,7 @@ class Database:
 
         # Open database if not connected
         if self.db_connection is None or self.db_cursor is None:
-            self.open_db()
+            self._open_db()
 
         # Read all jobs of task defined by task_id with successful execution (Exit_Value = EXIT)
         self.db_cursor.execute("SELECT * FROM Job WHERE Task_ID = ? AND Exit_Value = ?",
@@ -378,7 +492,7 @@ class Database:
         rows = self.db_cursor.fetchall()
 
         # close database
-        self.close_db()
+        self._close_db()
 
         # Check number of rows
         if not rows:  # no jobs found
@@ -413,7 +527,7 @@ class Database:
 
         # Open database if not connected
         if self.db_connection is None or self.db_cursor is None:
-            self.open_db()
+            self._open_db()
 
         # create table "ExecutionTimes" if it does not exist
         create_table_sql = "CREATE TABLE IF NOT EXISTS ExecutionTimes (" \
@@ -447,7 +561,7 @@ class Database:
         self.db_connection.commit()
 
         # close database
-        self.close_db()
+        self._close_db()
 
     # read execution times from database
     def read_execution_times(self):
@@ -460,14 +574,14 @@ class Database:
         # create logger
         logger = logging.getLogger('traditional-SA.database.read_execution_times')
 
-        self.open_db()  # open database
+        self._open_db()  # open database
 
         # read table ExecutionTimes
         self.db_cursor.execute("SELECT * FROM ExecutionTimes")
         rows = self.db_cursor.fetchall()
 
         # close database
-        self.close_db()
+        self._close_db()
 
         # check if execution times where found
         if not rows:  # now row was read
@@ -495,93 +609,3 @@ class Database:
 
             # update dictionary
             self.execution_time_dict.update(dict_entry)
-
-    # check if a table exists in the database
-    def check_if_table_exists(self, table_name):
-        """Check if a table exists in the database.
-
-        This method checks if the table defined by table_name exists in the database. This is done
-        by executing a SQL query and evaluate the fetched rows. If nothing could be fetched (no rows
-        available), the table doesn't exist.
-
-        Args:
-            table_name -- name of the table that should be checked
-        Return:
-            True/False -- whether the table exists/doesn't exist in the database
-        """
-        self.open_db()  # open database
-
-        # execute the following query to determine if the table exists
-        sql_query = "SELECT * from sqlite_master " \
-                    "WHERE type = 'table' AND name = '{}'".format(table_name)
-        self.db_cursor.execute(sql_query)
-
-        # fetch all rows
-        rows = self.db_cursor.fetchall()
-
-        if not rows:  # no row could be fetched - table doesn't exist
-            self.close_db()  # close database
-            return False
-
-        # at least one row was fetched - table exists
-        self.close_db()  # close database
-        return True
-
-    # check the database
-    def check_database(self):
-        """Check the database.
-
-        This method checks the database, i.e. if all necessary tables are present. The necessary
-        tables are
-            ExecutionTimes
-            Job
-            Task
-            TaskSet
-        If a table does not exist in the database, it is created (if possible).
-
-        Return:
-            True/False -- whether all necessary tables exist
-            the name of the table which doesn't exist in the database
-        """
-        # Check table Job
-        if not self.check_if_table_exists('Job'):  # table Job does not exist
-            return False, 'Job'
-
-        # Check table Task
-        if not self.check_if_table_exists('Task'):  # table Task does not exist
-            return False, 'Task'
-
-        # check table TaskSet
-        if not self.check_if_table_exists('TaskSet'):  # table TaskSet does not exist
-            return False, 'TaskSet'
-
-        # Check table ExecutionTimes
-        if not self.check_if_table_exists('ExecutionTimes'):
-            # table ExecutionTime does not exist: create it through benchmark
-            benchmark_runtimes(self)
-
-        # all tables exist
-        return True, None
-
-    # check if the database exists
-    def check_if_database_exists(self):
-        """Check if the database file exists.
-
-        This method checks if the database defined by self.db_dir and self.db_name exists.
-
-        Return:
-            True/False -- whether the database exists
-        """
-        # create full path to database
-        db_path = self.db_dir + "\\" + self.db_name
-
-        # Check if database exists
-        if os.path.exists(db_path):  # database exists
-            return True
-        return False
-
-
-if __name__ == "__main__":
-    # Configure logging: format should be "LEVELNAME: Message",
-    # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
