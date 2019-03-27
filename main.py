@@ -6,15 +6,14 @@ Run this file for traditional schedulability analysis.
 import logging
 import time
 
+import command_parser
+import logging_config
 import rta
 import simulation
 import utilization
 import workload
 from Taskset import Taskset
 from database_interface import Database
-import command_parser
-
-import logging_config
 
 # valid schedulability analysis tests, that are currently implemented
 VALID_SA = [simulation.simulate,  # Simulation
@@ -71,9 +70,8 @@ def test_dataset(dataset, function):
 
     # Print results of simulation
     logging_config.print_results(function.__name__,
-                  [true_positive, false_positive, true_negative, false_negative, others])
-
-
+                                 [true_positive, false_positive, true_negative, false_negative,
+                                  others])
 
 
 def main():
@@ -90,7 +88,8 @@ def main():
 
         # Create a database object
         try:
-            my_database = Database()
+            my_database = Database(db_dir="C:\\Users\\tatjana.utz\\PycharmProjects\\Datenbanken",
+                                   db_name="panda_v3.db")
         except Exception as exc:
             logger.error('Could not create database object: {}'.format(exc))
             return
@@ -98,7 +97,7 @@ def main():
         # Read task-sets from database
         logger.info("Reading task-sets from the database...")
         start_time = time.time()
-        dataset = my_database.get_dataset()
+        dataset = my_database._load_dataset()
         end_time = time.time()
         logger.info("Read %d task-sets from the database!", len(dataset))
         logger.info("Time elapsed = %f\n", end_time - start_time)
@@ -119,8 +118,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # Configure logging: format should be "LEVELNAME: Message",
-    # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
-
     main()
