@@ -21,56 +21,49 @@ def benchmark_execution_times(database):
     logger = logging.getLogger('traditional-SA.benchmark.benchmark_execution_times')
     logger.info("Starting to benchmark execution times...")
 
-    # read table Task
-    task_list = database.read_table_task(dictionary=False)
+    task_list = database.read_table_task(dict=False)  # read table Task
+    c_dict = dict()  # create empty dictionary
 
-    # create empty dictionary
-    task_dict = dict()
-
-    # iterate over all tasks
-    for task in task_list:
-        # get all pkg and all combinations of pkg and arg from the task list
-        pkg = task[5]
-        arg = task[6]
-        if pkg not in task_dict:  # pkg not in the dictionary
-            task_dict[pkg] = []  # add pkg
-        if (pkg, arg) not in task_dict:  # (pkg, arg) not in dictionary
-            task_dict[(pkg, arg)] = []  # add (pkg, arg)
+    for task in task_list:  # iterate over all tasks
+        # create and add empty dictionary entry for PKG and (PKG, Arg)
+        pkg, arg = task[5], task[6]
+        if pkg not in c_dict:  # pkg not in the dictionary
+            c_dict[pkg] = []
+        if (pkg, arg) not in c_dict:  # (pkg, arg) not in the dictionary
+            c_dict[(pkg, arg)] = []
 
         # read all sucessfully run jobs of the task
         job_attributes = database.read_table_job(task_id=task[0], exit_value='EXIT')
 
-        # check if at least one job was read
-        if job_attributes:
+        if job_attributes:  # at least one job was read
             # calculate execution time of each job
             job_list = _calculate_executiontimes(job_attributes)
 
         # add execution times to the dictionary
-        task_dict[pkg].extend(job_list)  # add execution times to PKG
-        task_dict[(pkg, arg)].extend(job_list)  # add execution times to (PKG, arg)
+        c_dict[pkg].extend(job_list)  # add execution times to PKG
+        c_dict[(pkg, arg)].extend(job_list)  # add execution times to (PKG, arg)
 
-    # empty list for keys to be deleted, because no successful jobs were found
+    # create empty list for keys to be deleted
     delete_keys = []
 
     # iterate over all dictionary keys
-    for key in task_dict:
-        if task_dict[key]:  # at least one execution time was found
+    for key in c_dict:
+        if c_dict[key]:  # at least one execution time was found
             # calculate average execution time
-            average_c = sum(task_dict[key]) / len(task_dict[key])
+            average_c = sum(c_dict[key]) / len(c_dict[key])
 
             # round and save calculated value
-            task_dict[key] = round(average_c)
+            c_dict[key] = round(average_c)
         else:  # no execution time was found: delete key from dictionary
             delete_keys.append(key)
 
     # delete unused keys
     for key in delete_keys:
-        del task_dict[key]
+        del c_dict[key]
 
-    # save execution times to database
+    # write execution times to database
     logger.info("Saving calculated execution times to database...")
-    database.write_execution_time(task_dict)
-
+    database.write_execution_time(c_dict)
     logger.info("Saving successful! Benchmark finished!")
 
 

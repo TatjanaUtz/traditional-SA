@@ -8,8 +8,8 @@ The methods only differ in the starting value for response time calculation.
 import logging
 import math
 
-from Task import Task
-from Taskset import Taskset
+from database_interface import Task
+from database_interface import Taskset
 
 
 def rta_audsley(taskset):

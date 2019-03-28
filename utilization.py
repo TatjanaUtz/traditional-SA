@@ -2,7 +2,7 @@
 
 import logging
 
-from Taskset import Taskset
+from database_interface import Taskset
 
 
 def basic_utilization_test(taskset):

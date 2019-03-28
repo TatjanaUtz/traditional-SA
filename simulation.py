@@ -6,7 +6,7 @@ from functools import reduce
 from simso.configuration import Configuration
 from simso.core import Model
 
-from Taskset import Taskset
+from database_interface import Taskset
 
 
 def simulate(taskset):

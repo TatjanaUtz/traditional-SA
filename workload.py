@@ -5,8 +5,8 @@ This module contains all workload based schedulability test.
 import logging
 import math
 
-from Task import Task
-from Taskset import Taskset
+from database_interface import Task
+from database_interface import Taskset
 
 
 def rm_workload_test(taskset):

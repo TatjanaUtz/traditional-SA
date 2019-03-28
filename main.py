@@ -6,24 +6,76 @@ Run this file for traditional schedulability analysis.
 import logging
 import time
 
-import command_parser
+import command_line_interface
 import logging_config
 import rta
 import simulation
 import utilization
 import workload
-from Taskset import Taskset
+from database_interface import Taskset
 from database_interface import Database
 
-# valid schedulability analysis tests, that are currently implemented
-VALID_SA = [simulation.simulate,  # Simulation
-            utilization.basic_utilization_test,  # Basic utilization test for FP and EDF
-            utilization.rm_utilization_test,  # Utilization test for RM
-            utilization.hb_utilization_test,  # Utilization test with Hyperbolic Bound
+# valid schedulability analysis methods, that are currently implemented
+VALID_SA = [simulation.simulate,  # simulation
+            utilization.basic_utilization_test,  # basic utilization test
+            utilization.rm_utilization_test,  # utilization test for RM
+            utilization.hb_utilization_test,  # utilization test with hyperbolic bound
             rta.rta_audsley,  # RTA according to Audsley
             rta.rta_buttazzo,  # RTA according to Buttazzo
-            workload.rm_workload_test,  # Workload test for RM
-            workload.het_workload_test]  # HET workload test
+            workload.rm_workload_test,  # workload test for RM
+            workload.het_workload_test]  # hyperplanes exact test based on workload
+
+
+def main():
+    """Main function."""
+    logger = logging_config.init_logging()  # create and initialize logging
+
+    # read and process command line arguments
+    db_dir, db_name, tests_todo = command_line_interface.read_input()
+
+    if tests_todo is not None:  # at least one test should be done
+        logger.info("Tests to do: %s \n", [test.__name__ for test in tests_todo])
+
+        # load the dataset
+        dataset = load_dataset(db_dir, db_name)
+
+        # Iterate through the to-do list and perform tests
+        for test in tests_todo:
+            test_dataset(dataset, test)
+
+
+def load_dataset(db_dir, db_name):
+    """Load the dataset from the database.
+
+    Args:
+        db_dir -- directory of the database
+        db_name -- name of the database
+    Return:
+        dataset --- list with the task-sets of type Taskset
+    """
+    # create logger
+    logger = logging.getLogger('traditional-SA.main.load_dataset')
+
+    # create a database object
+    try:
+        # TODO: replace with variables
+        my_database = Database(db_dir="C:\\Users\\tatjana.utz\\PycharmProjects\\Datenbanken",
+                               db_name="panda_v3.db")
+    except Exception as exc:
+        logger.error("Could not create database object: %s", format(exc))
+        return
+
+    logger.info("Reading task-sets from the database...")
+    start_time = time.time()
+
+    # read table 'TaskSet'
+    dataset = my_database.read_table_taskset()
+
+    end_time = time.time()
+    logger.info("Read %d task-sets from the database!", len(dataset))
+    logger.info("Time elapsed = %f\n", end_time - start_time)
+
+    return dataset
 
 
 def test_dataset(dataset, function):
@@ -33,6 +85,8 @@ def test_dataset(dataset, function):
         dataset - the dataset that should be analyzed
         function - the schedulability analysis method
     """
+    start_time = time.time()
+
     # create logger
     logger = logging.getLogger('traditional-SA.main.test_dataset')
 
@@ -68,53 +122,17 @@ def test_dataset(dataset, function):
         else:  # no valid combination
             others += 1
 
+    end_time = time.time()
+
     # Print results of simulation
     logging_config.print_results(function.__name__,
                                  [true_positive, false_positive, true_negative, false_negative,
                                   others])
 
-
-def main():
-    """Main function of project."""
-
-    # Create and initialize logger
-    logger = logging_config.init_logging()
-
-    # Read the tests that should be performed (defined by command line arguments)
-    tests_todo = command_parser.read_input()
-
-    if tests_todo is not None:  # at least one test should be done
-        logger.info("Tests to do: %s \n", [test.__name__ for test in tests_todo])
-
-        # Create a database object
-        try:
-            my_database = Database(db_dir="C:\\Users\\tatjana.utz\\PycharmProjects\\Datenbanken",
-                                   db_name="panda_v3.db")
-        except Exception as exc:
-            logger.error('Could not create database object: {}'.format(exc))
-            return
-
-        # Read task-sets from database
-        logger.info("Reading task-sets from the database...")
-        start_time = time.time()
-        dataset = my_database._load_dataset()
-        end_time = time.time()
-        logger.info("Read %d task-sets from the database!", len(dataset))
-        logger.info("Time elapsed = %f\n", end_time - start_time)
-
-        # Iterate through the to-do list and perform tests
-        for test in tests_todo:
-            start_time = time.time()  # Save start time
-            test_dataset(dataset, test)  # Run test
-            end_time = time.time()  # Save end time
-            logger.info("Time elapsed = %f\n", end_time - start_time)  # print elapsed time
-
-            log_file = open(logging_config.LOG_FILE_NAME, 'a+')
-            log_file.write("Time elapsed = {}\n".format(end_time - start_time))
-            log_file.close()
-
-    else:  # no test should be performed
-        logger.info("Nothing to do...\n")
+    # log elapsed time
+    log_file = open(logging_config.LOG_FILE_NAME, 'a+')
+    log_file.write("Time elapsed = {}\n".format(end_time - start_time))
+    log_file.close()
 
 
 if __name__ == "__main__":

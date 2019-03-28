@@ -1,10 +1,14 @@
-"""Class and functions for database connectivity."""
-import logging  # for logging
-import os  # for current directory dir
-import sqlite3  # for working with the database
+"""Class and methods for database connectivity.
 
-from Task import Task  # for creating tasks
-from Taskset import Taskset  # for creating task-sets
+This module provides classes and methods for importing task-sets from the SQLite database
+and formatting data into a format usable with tensorflow.
+"""
+
+import logging
+import operator
+import os
+import sqlite3
+
 from benchmark import benchmark_execution_times
 
 # default task execution times
@@ -44,6 +48,100 @@ DEFAULT_EXECUTION_TIMES = {
     "cond_mod": 1366,
     "tumatmul": 2090
 }
+
+
+class Task():
+    """Representation of a task.
+
+    Currently only the following attributes are integrated:
+        id -- id of the task, corresponds to column 'Task_ID'
+        priority -- priority of task, 1 is the highest priority
+        pkg -- name of the task, corresponds to column 'PKG'
+        arg -- argument of task, has influence on the execution time
+        deadline -- deadline of the task
+        period -- period of the task
+        number_of_jobs -- number of jobs, defines how often the task is executed
+        execution_time -- time needed to execute the task
+    """
+
+    def __init__(self, task_id=-1, priority=-1, pkg=None, arg=None, deadline=-1, period=-1,
+                 number_of_jobs=-1, execution_time=-1):
+        """Constructor"""
+        self.task_id = task_id
+        self.priority = priority
+        self.pkg = pkg
+        self.arg = arg
+        self.deadline = deadline
+        self.period = period
+        self.number_of_jobs = number_of_jobs
+        self.execution_time = execution_time
+        if self.deadline == -1:
+            self.deadline = self.period
+
+    def __str__(self):
+        """Represent task as string."""
+        repr_str = "(id=" + str(self.task_id) + " prio=" + str(self.priority) + " " + str(self.pkg) \
+                   + "(" + str(self.arg) + ") D=" + str(self.deadline) + " T=" + str(self.period) \
+                   + " " + str(self.number_of_jobs) + "x C=" + str(self.execution_time) + ")"
+        return repr_str
+
+
+class Taskset:
+    """Representation of a task-set.
+
+    Currently only the following attributes are integrated:
+        taskset_id -- ID of the task-set, corresponds to column 'Set_ID'
+        result -- 1 if task-set could be successfully scheduled, otherwise 0, corresponds to column
+                  'Sucessful'
+        tasks -- list of tasks (of type Task)
+    """
+
+    def __init__(self, taskset_id=-1, result=-1, tasks=None):
+        """Constructor."""
+        self.taskset_id = taskset_id
+        self.result = result
+        if tasks is None:
+            self.tasks = []
+        else:
+            self.tasks = tasks
+
+        # Sort tasks according to priorities
+        self.tasks.sort(key=operator.attrgetter('priority'))
+
+    def __str__(self):
+        """Represent Taskset object as String."""
+        representation_string = "id=" + str(self.taskset_id) + " result=" + str(self.result) + " " \
+                                + str([str(task) for task in self.tasks])
+        return representation_string
+
+    def __len__(self):
+        """Get length of task-set = number of tasks."""
+        return len(self.tasks)
+
+    def __iter__(self):
+        """Iterate over the task-list."""
+        return self.tasks.__iter__()
+
+    def __getitem__(self, index):
+        """Get task at index."""
+        return self.tasks[index]
+
+    def add_task(self, task):
+        """Add a new task to the task-set.
+
+        Check the input argument. If a correct input is given, add the task to the task-set and
+        sort it according to priorities.
+
+        Args:
+            task -- the task that should be added, must be of type 'Task'
+        """
+        # check input arguments
+        if not isinstance(task, Task):  # wrong input argument
+            raise ValueError("task must be of type Task")
+
+        self.tasks.append(task)  # add task to task-set
+        self.tasks.sort(
+            key=operator.attrgetter('priority'))  # sort tasks according to increasing priorities
 
 
 class Database:
@@ -219,22 +317,19 @@ class Database:
 
         return rows
 
-    def read_table_task(self, task_id=None, dictionary=True):
+    def read_table_task(self, task_id=None, dict=True):
         """Read the table Task.
 
         This method reads the table Task of the database. If task_id is not specified, the hole
-        table is read. If task_id is specified, only the tasks defined by task_id are read.
+        table is read. If task_id is specified, only the task defined by task_id is read.
 
         Args:
             task_id -- ID of the task which should be read
-            dictionary -- whether the tasks should be returned as list or dictionary
+            dict -- whether the tasks should be returned as list or dictionary
         Return:
             rows -- list with the task attributes
             task_dict -- dictionary of the task attributes (key = task ID, value = Task-object)
         """
-        # create logger
-        logger = logging.getLogger("traditional-SA.database_interface.read_table_task")
-
         self._open_db()  # open database
 
         if task_id is not None:  # read task with task_id
@@ -245,28 +340,55 @@ class Database:
         rows = self.db_cursor.fetchall()
         self._close_db()  # close database
 
-        if dictionary:  # convert task attributes to dictionary
+        if dict:  # convert task attributes to dictionary
             task_dict = self._convert_to_task_dict(rows)
             return task_dict
 
         return rows
 
-    def read_table_executiontime(self, dictionary=True):
+    def read_table_taskset(self, taskset_id=None, convert=True):
+        """Read the table TaskSet.
+
+        This method reads the table TaskSet of the database.
+
+        Args:
+            taskset_id -- ID of the task-set which should be read
+            convert -- whether the task-sets should be converted to objects of type Taskset
+        Return:
+            dataset -- list with the task-sets
+        """
+        self._open_db()  # open database
+
+        if taskset_id is not None:  # read task-set with taskset_id
+            self.db_cursor.execute("SELECT * FROM TaskSet WHERE Set_ID = ?", (taskset_id,))
+        else:  # read all tasks-sets
+            self.db_cursor.execute("SELECT * FROM TaskSet")
+
+        rows = self.db_cursor.fetchall()
+        self._close_db()  # close database
+
+        # TODO: Limit number of rows
+        rows = rows[:5]
+
+        if convert:  # convert task-sets to objects of type Taskset
+            dataset = self._convert_to_taskset(rows)
+            return dataset
+
+        return rows
+
+    def read_table_executiontime(self, dict=True):
         """Read the table ExecutionTime.
 
         This method reads the table ExecutionTime. The hole table is read, i.e. all rows.
 
         Args:
-            dictionary -- whether the execution times should be returned as list or dictionary
+            dict -- whether the execution times should be returned as list or dictionary
 
         Return:
             execution_times -- list with the execution times
             c_dict -- dictionary of the execution times (key = PKG or (PKG, Arg), value = execution
                       time)
         """
-        # create logger
-        logger = logging.getLogger('traditional-SA.database.read_table_executiontime')
-
         self._open_db()  # open database
 
         # read all execution times
@@ -274,13 +396,13 @@ class Database:
         rows = self.db_cursor.fetchall()
         self._close_db()  # close database
 
-        if dictionary:  # convert execution times to dictionary
+        if dict:  # convert execution times to dictionary
             c_dict = self._convert_to_executiontime_dict(rows)
             return c_dict
 
         return rows
 
-    def write_execution_time(self, task_dict):
+    def write_execution_time(self, c_dict):
         """Write the execution times to the database.
 
         Args:
@@ -307,13 +429,13 @@ class Database:
                                 "([PKG(Arg)], Average_C) VALUES(?, ?)"
 
         # iterate over all keys
-        for key in task_dict:
+        for key in c_dict:
             if isinstance(key, str):  # key = (PKG)
                 # insert or replace task-set
-                self.db_cursor.execute(insert_or_replace_sql, (key, task_dict[key]))
+                self.db_cursor.execute(insert_or_replace_sql, (key, c_dict[key]))
             elif len(key) == 2:  # key = (PKG, Arg)
                 self.db_cursor.execute(insert_or_replace_sql,
-                                       (key[0] + "(" + str(key[1]) + ")", task_dict[key]))
+                                       (key[0] + "(" + str(key[1]) + ")", c_dict[key]))
 
         self._close_db()  # close database
 
@@ -354,6 +476,42 @@ class Database:
 
         return task_dict
 
+    def _convert_to_taskset(self, rows):
+        """Convert a list of task-sets to objects of type Taskset.
+
+        This function converts a list of task-sets from the table TaskSet to a list of Taskset
+        objects.
+
+        Args:
+            rows -- the rows read from the table TaskSet
+        Return:
+            dataset -- list of Taskset objects
+        """
+        # read table 'Task': get dictionary with task attributes
+        # (key = task ID, value = Task-object)
+        task_attributes = self.read_table_task()
+
+        dataset = []  # create empty list
+
+        # iterate over all rows
+        for row in rows:
+            # split taskset ID, label and taskset IDs
+            taskset_id = row[0]
+            label = row[1]
+            task_ids = row[2:]
+
+            # create empty task-set
+            new_taskset = Taskset(taskset_id=taskset_id, result=label, tasks=[])
+
+            # iterate over all tasks and add them to the task-set
+            for task_id in task_ids:
+                if task_id != -1:  # valid task-id
+                    new_task = task_attributes[task_id]  # get task
+                    new_taskset.add_task(new_task)  # add task to task-set
+
+            # add task-set to dataset
+            dataset.append(new_taskset)
+
     def _convert_to_executiontime_dict(self, execution_times):
         """Convert a list of execution times to a dictionary.
 
@@ -387,164 +545,3 @@ class Database:
             c_dict.update(dict_entry)
 
         return c_dict
-
-    ################
-    # load dataset #
-    ################
-
-    def _load_dataset(self):
-        """Create a dataset of task-sets.
-
-        This method reads all task-sets from the table TaskSet and creates a dataset with them.
-
-        Return:
-            dataset -- list with task-sets as Taskset-objects
-        """
-        # create logger
-        logger = logging.getLogger('traditional-SA.database.get_dataset')
-
-        # read table 'TaskSet'
-        self._open_db()  # open database
-        # read all task-sets
-        self.db_cursor.execute("SELECT * FROM TaskSet")
-        rows = self.db_cursor.fetchall()
-        self._close_db()  # close database
-
-        if not rows:  # no task-set read
-            logger.debug("No task-set read!")
-            return None
-
-        # Limit number of rows
-        rows = rows[:5]
-
-        # read table 'Task': get dictionary with task attributes
-        # (key = task ID, value = Task-object)
-        task_attributes = self.read_table_task()
-
-        dataset = []  # create empty list
-
-        # iterate over all rows
-        for row in rows:
-            # split taskset ID, label and taskset IDs
-            taskset_id = row[0]
-            label = row[1]
-            task_ids = row[2:]
-
-            # create empty task-set
-            new_taskset = Taskset(taskset_id=taskset_id, result=label, tasks=[])
-
-            # iterate over all tasks and add them to the task-set
-            for task_id in task_ids:
-                if task_id != -1:  # valid task-id
-                    new_task = task_attributes[task_id]  # get task
-                    new_taskset.add_task(new_task)  # add task to task-set
-
-            # add task-set to dataset
-            dataset.append(new_taskset)
-
-        return dataset
-
-    ###########
-    # testing #
-    ###########
-
-    def get_taskset(self, taskset_id=0):
-        """Get a task-set.
-
-        Read a task-set from the database. If no ID is given, the first task-set is returned.
-
-        Input arguments:
-            taskset_id -- index of the task-set, corresponds to ID of task-set (column Set-ID)
-        Return value:
-            the task-set
-        """
-        # create logger
-        logger = logging.getLogger('traditional-SA.database.get_taskset')
-
-        # Check input argument - must be a positive integer number
-        if not isinstance(taskset_id, int) or taskset_id < 0:  # invalid input
-            raise ValueError("Invalid input argument - must be an positive int!")
-
-        self._open_db()  # open database
-        # read the task-set from the database
-        self.db_cursor.execute("SELECT * FROM TaskSet WHERE Set_ID = ?", (taskset_id,))
-        row = self.db_cursor.fetchall()
-        self._close_db()  # close database
-
-        if not row:  # no task-set with Set_ID = id found
-            logger.debug("No task-set with ID = %d found!", taskset_id)
-            return None
-
-        if len(row) > 1:  # more than one task-set with Set_ID = id found
-            raise ValueError("Something is wrong - more than one task-set with ID = %d found",
-                             taskset_id)
-
-        # one task-set was found: extract task-set attributes
-        taskset_id = row[0][0]
-        label = row[0][1]
-        task_ids = row[0][2:]
-
-        # Create empty task-set
-        new_taskset = Taskset(taskset_id=taskset_id, result=label, tasks=[])
-
-        # Iterate over all tasks and create task-set
-        for task_id in task_ids:
-            if task_id != -1:  # Valid task-id
-                new_task = self.get_task(task_id)  # get task from database
-                new_taskset.add_task(new_task)  # add task to task-set
-
-        # return created task-set
-        return new_taskset
-
-    def get_task(self, task_id):
-        """Read a task from the database.
-
-        Extracts the attributes of a task with the Task-ID defined by task_id and creates a new
-        object of class Task.
-        Input arguments:
-            task_id -- id of the task, corresponds to Task_ID
-        Return values:
-            task
-        """
-        # create logger
-        logger = logging.getLogger('traditional-SA.database.get_task')
-
-        # Check input argument - must be a positive integer number
-        if not isinstance(task_id, int) or task_id < 0:  # invalid input
-            raise ValueError("task_id must be of type int")
-
-        self._open_db()  # open database
-        # Read the task defined by id
-        self.db_cursor.execute("SELECT * FROM Task WHERE Task_ID = ?", (task_id,))
-        row = self.db_cursor.fetchall()
-        self._close_db()  # close database
-
-        # Check number of rows
-        if not row:  # no task with Task_ID = id found
-            logger.debug("No task with Task_ID = %d found!", task_id)
-            return None
-        if len(row) > 1:  # more than one task with Task_ID = id found
-            raise ValueError("More than one task with Task_ID = %d found!", task_id)
-
-        # one task was found: extract attributes of the task
-        task_id = row[0][0]
-        priority = row[0][1]
-        pkg = row[0][5]
-        arg = row[0][6]
-        deadline = row[0][9]
-        period = row[0][10]
-        number_of_jobs = row[0][11]
-
-        # Define execution time depending on pkg and arg
-        if (pkg, arg) in self.execution_time_dict:  # combination of pkg and arg exists
-            execution_time = self.execution_time_dict[(pkg, arg)]
-        else:  # combination of pkg and arg does not exist
-            # use only pkg to determine execution time
-            execution_time = self.execution_time_dict[pkg]
-
-        # Create new task
-        new_task = Task(task_id=task_id, priority=priority, pkg=pkg, arg=arg, deadline=deadline,
-                        period=period, number_of_jobs=number_of_jobs, execution_time=execution_time)
-
-        # Return created task
-        return new_task
