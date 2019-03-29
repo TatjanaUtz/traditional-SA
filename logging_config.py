@@ -1,15 +1,20 @@
 """Cofiguration for logging."""
 import logging
+import os
 
 LOG_FILE_NAME = "results.log"
 
-def init_logging():
+
+def init_logging(db_name):
     """Initializes logging.
 
-    Configures logging. Error messages are logged to the 'error.log' file. All messages are logged
-    to the console.
+    Configures logging. Error messages are logged to the 'error.log' file. Info messages are logged
+    to the console. The results are save in a 'result_' log file.
+
+    Args:
+        db_name -- name of the database, used to create file name for results
     """
-    # create logger for 'traditional-SA# project
+    # create logger for traditional-SA project
     logger = logging.getLogger('traditional-SA')
     logger.setLevel(logging.INFO)
 
@@ -17,7 +22,7 @@ def init_logging():
     log_file_handler = logging.FileHandler('error.log', mode='w+')
     log_file_handler.setLevel(logging.ERROR)
 
-    # create console handler with a lower log level
+    # create console handler with a lower log level (e.g debug or info)
     log_console_handler = logging.StreamHandler()
     log_console_handler.setLevel(logging.INFO)
 
@@ -30,78 +35,82 @@ def init_logging():
     logger.addHandler(log_file_handler)
     logger.addHandler(log_console_handler)
 
-    # Create file to which results should be written to
-    log_file = open(LOG_FILE_NAME, 'w+')
-    log_file.close()
+    # create log file for results
+    db_name = os.path.splitext(db_name)[0]  # remove file extension from the database name
+    global LOG_FILE_NAME
+    LOG_FILE_NAME = "results_" + db_name + ".log"  # edit log file name
+    log_file = open(LOG_FILE_NAME, 'w+')  # create or clear file
+    log_file.close()  # close file
 
     return logger
 
-def print_results(test_name, results):
+
+def log_results(test_name, results):
     """Print results of a schedulability analysis method.
 
-    Overview of the results of a schedulability test is printed.
+    Overview of the results of a schedulability test is printed to the result file and the console.
 
     Args:
-        test_name - name of the schedulability analysis method
-        results -- list of results:
-            [0] -- true positive results
-            [1] -- false positive reults
-            [2] -- true negative results
-            [3] -- false negative results
-            [4] -- not assignable (other) results
+        test_name -- name of the schedulability analysis method
+        results -- dictionary of results:
+            tp -- true positive results
+            fp -- false positive results
+            tn -- true negative results
+            fn -- false negative results
     """
     # create logger
-    logger = logging.getLogger('traditional-SA.main.print_results')
+    logger = logging.getLogger('traditional-SA.logging_config.print_results')
 
     # check input arguments
     if not isinstance(test_name, str):  # invalid argument for test_name
-        raise ValueError("Invalid argument for test_name (must be string)!")
-    if not isinstance(results, list):  # invalid argument for results
-        raise ValueError("Invalid argument for results (must be list)!")
-    if len(results) < 5:  # to less results are given
-        raise ValueError("Invalid argument for results: must be a list containing "
-                     "[true_positives, false_positives, true_negatives, false_negatives, other]!}")
+        raise ValueError("test_name must be of type String")
+    if not isinstance(results, dict):  # invalid argument for results
+        raise ValueError("results must be of type list")
+    if len(results) < 4:  # to less results are given
+        raise ValueError("results must be a dictionary containing entries for "
+                         "'tp', 'fp', 'tn' and 'fn'")
 
-    sum_results = sum(results[:4])  # sum of correct and incorrect results
-    correct = results[0] + results[2]  # number of correct results
-    incorrect = results[1] + results[3]  # number of incorrect results
+    # calculate sum of all results
+    sum_results = results['tp'] + results['fp'] + results['tn'] + results['fn']
 
-    # Print results to a file
+    results['accuracy'] = (results['tp'] + results['tn']) / (sum_results)  # calculate accuracy
+    results['precision'] = results['tp'] / (results['tp'] + results['fp'])  # calculate precision
+    results['recall'] = results['tp'] / (results['tp'] + results['fn'])  # calculate recall
+
+    # log results to the result log file
     log_file = open(LOG_FILE_NAME, 'a+')
     log_file.write("\n")
     result_title_string = "---------- Results of " + test_name + " ----------"
     log_file.write(result_title_string + "\n")
-    log_file.write("Correct results: {0:d} / {1:d} = {2:0.2f}% \n"
-                   .format(correct, sum_results, correct * 100 / sum_results))
-    log_file.write("Incorrect results: {0:d}/ {1:d} = {2:.2f}% \n"
-                   .format(incorrect, sum_results, incorrect * 100 / sum_results))
     log_file.write("True positive results (tp) = {0:d} = {1:.2f}% \n"
-                   .format(results[0], results[0] * 100 / sum_results))
+                   .format(results['tp'], results['tp'] / sum_results * 100))
     log_file.write("False positive results (fp) = {0:d} = {1:.2f}% \n"
-                   .format(results[1], results[1] * 100 / sum_results))
+                   .format(results['fp'], results['fp'] / sum_results * 100))
     log_file.write("True negative results (tn) = {0:d} = {1:.2f}% \n"
-                   .format(results[2], results[2] * 100 / sum_results))
+                   .format(results['tn'], results['tn'] / sum_results * 100))
     log_file.write("False negative results (fn) = {0:d} = {1:.2f}% \n"
-                   .format(results[3], results[3] * 100 / sum_results))
-    log_file.write("Other results = {0:d} \n".format(results[4]))
+                   .format(results['fn'], results['fn'] / sum_results * 100))
+    log_file.write("Total = {0:d} \n".format(sum_results))
+    log_file.write("-" * len(result_title_string) + "\n")
+    log_file.write("Accuracy = {0:.2f}% \n".format(results['accuracy'] * 100))
+    log_file.write("Precision = {0:.2f}% \n".format(results['precision'] * 100))
+    log_file.write("Recall = {0:.2f}% \n".format(results['recall'] * 100))
     log_file.write("-" * len(result_title_string) + "\n")
 
-    # Print results to console
+    # log results to the console
     result_title_string = "---------- Results of " + test_name + " ----------"
     logger.info(result_title_string)
-    logger.info("\t Correct results: {0:d} / {1:d} = {2:0.2f}%"
-                .format(correct, sum_results, correct * 100 / sum_results))
-    logger.info("\t Incorrect results: {0:d}/ {1:d} = {2:.2f}%"
-                .format(incorrect, sum_results, incorrect * 100 / sum_results))
-    logger.info("\t True positive results (tp) = {0:d} = {1:.2f}%"
-                .format(results[0], results[0] * 100 / sum_results))
-    logger.info("\t False positive results (fp) = {0:d} = {1:.2f}%"
-                .format(results[1], results[1] * 100 / sum_results))
-    logger.info("\t True negative results (tn) = {0:d} = {1:.2f}%"
-                .format(results[2], results[2] * 100 / sum_results))
-    logger.info("\t False negative results (fn) = {0:d} = {1:.2f}%"
-                .format(results[3], results[3] * 100 / sum_results))
-    logger.info("\t Other results = {0:d}".format(results[4]))
+    logger.info("True positive results (tp) = %d = %.2f%%",
+                results['tp'], results['tp'] / sum_results * 100)
+    logger.info("False positive results (fp) = %d = %.2f%%",
+                results['fp'], results['fp'] / sum_results * 100)
+    logger.info("True negative results (tn) = %d = %.2f%%",
+                results['tn'], results['tn'] / sum_results * 100)
+    logger.info("False negative results (fn) = %d = %.2f%%",
+                results['fn'], results['fn'] / sum_results * 100)
+    logger.info("Total = %d", sum_results)
     logger.info("-" * len(result_title_string))
-
-
+    logger.info("Accuracy = %.2f%%", results['accuracy'] * 100)
+    logger.info("Precision = %.2f%%", results['precision'] * 100)
+    logger.info("Recall = %.2f%%", results['recall'] * 100)
+    logger.info("%s \n", "-" * len(result_title_string))
