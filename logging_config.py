@@ -1,4 +1,4 @@
-"""Cofiguration for logging."""
+"""Configurations for logging."""
 import logging
 import os
 
@@ -57,6 +57,7 @@ def log_results(test_name, results):
             fp -- false positive results
             tn -- true negative results
             fn -- false negative results
+            time -- time elapsed for test
     """
     # create logger
     logger = logging.getLogger('traditional-SA.logging_config.print_results')
@@ -96,6 +97,8 @@ def log_results(test_name, results):
     log_file.write("Precision = {0:.2f}% \n".format(results['precision'] * 100))
     log_file.write("Recall = {0:.2f}% \n".format(results['recall'] * 100))
     log_file.write("-" * len(result_title_string) + "\n")
+    log_file.write("Time elapsed: {0:f}s \n".format(results['time']))
+    log_file.write("-" * len(result_title_string) + "\n")
 
     # log results to the console
     result_title_string = "---------- Results of " + test_name + " ----------"
@@ -109,8 +112,10 @@ def log_results(test_name, results):
     logger.info("False negative results (fn) = %d = %.2f%%",
                 results['fn'], results['fn'] / sum_results * 100)
     logger.info("Total = %d", sum_results)
-    logger.info("-" * len(result_title_string))
+    logger.info("%s", "-" * len(result_title_string))
     logger.info("Accuracy = %.2f%%", results['accuracy'] * 100)
     logger.info("Precision = %.2f%%", results['precision'] * 100)
     logger.info("Recall = %.2f%%", results['recall'] * 100)
+    logger.info("%s", "-" * len(result_title_string))
+    logger.info("Time elapsed: %fs", results['time'])
     logger.info("%s \n", "-" * len(result_title_string))
