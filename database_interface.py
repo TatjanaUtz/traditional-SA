@@ -367,6 +367,8 @@ class Database:
         rows = self.db_cursor.fetchall()
         self._close_db()  # close database
 
+        rows = rows[:5]
+
         if convert:  # convert task-sets to objects of type Taskset
             dataset = self._convert_to_taskset(rows)
             return dataset

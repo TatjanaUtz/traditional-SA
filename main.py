@@ -61,9 +61,9 @@ def load_dataset(db_dir, db_name):
     # create a database object
     try:
         my_database = Database(db_dir=db_dir, db_name=db_name)
-    except Exception as exc:
-        logger.error("Could not create database object: %s", format(exc))
-        return
+    except ValueError as val_err:
+        logger.error("Could not create database object: %s", format(val_err))
+        return None
 
     logger.info("Reading task-sets from the database...")
     start_time = time.time()
@@ -102,11 +102,10 @@ def test_dataset(dataset, function):
     start_time = time.time()
 
     # Iterate over all task-sets and check schedulability
-    for i in range(num_tasksets):
-        taskset = dataset[i]
-        schedulability = function(taskset)
+    for taskset in dataset:
+        schedulability = function(taskset)  # check schedulability of task-set
 
-        # Compare SA result with real result
+        # compare SA result with real result
         real_result = taskset.result
         if schedulability is True and real_result == 1:  # SA is true positive
             true_positive += 1
