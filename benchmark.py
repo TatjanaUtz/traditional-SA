@@ -99,7 +99,7 @@ def _calculate_executiontimes(job_attributes):
 if __name__ == "__main__":
     # Configure logging: format should be "LEVELNAME: Message",
     # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
     # create Database object - benchmark is started within constructor
     database_interface.Database(db_dir="C:\\Users\\tatjana.utz\\PycharmProjects\\Datenbanken",

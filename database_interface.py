@@ -367,9 +367,6 @@ class Database:
         rows = self.db_cursor.fetchall()
         self._close_db()  # close database
 
-        # TODO: Limit number of rows
-        rows = rows[:5]
-
         if convert:  # convert task-sets to objects of type Taskset
             dataset = self._convert_to_taskset(rows)
             return dataset
@@ -511,6 +508,8 @@ class Database:
 
             # add task-set to dataset
             dataset.append(new_taskset)
+
+        return dataset
 
     def _convert_to_executiontime_dict(self, execution_times):
         """Convert a list of execution times to a dictionary.

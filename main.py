@@ -12,8 +12,8 @@ import rta
 import simulation
 import utilization
 import workload
-from database_interface import Taskset
 from database_interface import Database
+from database_interface import Taskset
 
 # valid schedulability analysis methods, that are currently implemented
 VALID_SA = [simulation.simulate,  # simulation
@@ -23,15 +23,16 @@ VALID_SA = [simulation.simulate,  # simulation
             rta.rta_audsley,  # RTA according to Audsley
             rta.rta_buttazzo,  # RTA according to Buttazzo
             workload.rm_workload_test,  # workload test for RM
-            workload.het_workload_test]  # hyperplanes exact test based on workload
+            workload.het_workload_test  # hyperplanes exact test based on workload
+            ]
 
 
 def main():
     """Main function."""
-    logger = logging_config.init_logging()  # create and initialize logging
-
     # read and process command line arguments
     db_dir, db_name, tests_todo = command_line_interface.read_input()
+
+    logger = logging_config.init_logging(db_name)  # create and initialize logging
 
     if tests_todo is not None:  # at least one test should be done
         logger.info("Tests to do: %s \n", [test.__name__ for test in tests_todo])
@@ -41,7 +42,8 @@ def main():
 
         # Iterate through the to-do list and perform tests
         for test in tests_todo:
-            test_dataset(dataset, test)
+            results = test_dataset(dataset, test)
+            logging_config.log_results(test.__name__, results)
 
 
 def load_dataset(db_dir, db_name):
@@ -58,9 +60,7 @@ def load_dataset(db_dir, db_name):
 
     # create a database object
     try:
-        # TODO: replace with variables
-        my_database = Database(db_dir="C:\\Users\\tatjana.utz\\PycharmProjects\\Datenbanken",
-                               db_name="panda_v3.db")
+        my_database = Database(db_dir=db_dir, db_name=db_name)
     except Exception as exc:
         logger.error("Could not create database object: %s", format(exc))
         return
@@ -73,7 +73,7 @@ def load_dataset(db_dir, db_name):
 
     end_time = time.time()
     logger.info("Read %d task-sets from the database!", len(dataset))
-    logger.info("Time elapsed = %f\n", end_time - start_time)
+    logger.info("Time elapsed: %f\n", end_time - start_time)
 
     return dataset
 
@@ -85,11 +85,6 @@ def test_dataset(dataset, function):
         dataset - the dataset that should be analyzed
         function - the schedulability analysis method
     """
-    start_time = time.time()
-
-    # create logger
-    logger = logging.getLogger('traditional-SA.main.test_dataset')
-
     # Check input arguments
     if not isinstance(dataset, list):  # Check if dataset ia a list
         raise ValueError("Invalid dataset! Dataset must be a list!\n")
@@ -101,8 +96,10 @@ def test_dataset(dataset, function):
     # Get number of task-sets in the dataset
     num_tasksets = len(dataset)
 
-    # Variables for printing results of SA
-    true_positive, false_positive, true_negative, false_negative, others = 0, 0, 0, 0, 0
+    # variables for results of SA
+    true_positive, false_positive, true_negative, false_negative = 0, 0, 0, 0
+
+    start_time = time.time()
 
     # Iterate over all task-sets and check schedulability
     for i in range(num_tasksets):
@@ -119,20 +116,14 @@ def test_dataset(dataset, function):
             false_negative += 1
         elif schedulability is False and real_result == 0:  # SA is true negative
             true_negative += 1
-        else:  # no valid combination
-            others += 1
 
     end_time = time.time()
 
-    # Print results of simulation
-    logging_config.print_results(function.__name__,
-                                 [true_positive, false_positive, true_negative, false_negative,
-                                  others])
+    # create dictionary with results of SA
+    result_dict = {'tp': true_positive, 'fp': false_positive, 'tn': true_negative,
+                   'fn': false_negative, 'time': end_time - start_time}
 
-    # log elapsed time
-    log_file = open(logging_config.LOG_FILE_NAME, 'a+')
-    log_file.write("Time elapsed = {}\n".format(end_time - start_time))
-    log_file.close()
+    return result_dict
 
 
 if __name__ == "__main__":
