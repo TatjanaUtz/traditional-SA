@@ -24,21 +24,20 @@ def benchmark_execution_times(database):
         # get all task-sets where the current task is the only task
         taskset_list = database.read_table_taskset(task_id=task[0], convert=False)
 
-        job_list = []  # create empty list for the jobs
+        job_attributes = []  # create empty list for the jobs
 
         for taskset in taskset_list:  # iterate over all task-sets
-            # add all successfully run jobs of the current task and task-set
-            job_list.extend(database.read_table_job(set_id=taskset[0], task_id=task[0], exit_value='EXIT'))
+            # add all jobs of the current task and task-set
+            job_attributes.extend(database.read_table_job(set_id=taskset[0], task_id=task[0]))
 
-        if job_list:  # at least one job was read
-            # calculate execution time of each job
-            job_list = _calculate_executiontimes(job_list)
+        # calculate execution time of each job
+        job_execution_times = _calculate_executiontimes(job_attributes)
 
-            # calculate average execution time of current task
-            average_c = sum(job_list) / len(job_list)
+        # calculate average execution time of current task
+        average_c = sum(job_execution_times) / len(job_execution_times)
 
-            # round and add execution time to the dictionary
-            c_dict[task[0]] = round(average_c)
+        # round and add execution time to the dictionary
+        c_dict[task[0]] = round(average_c)
 
     end_time = time.time()
     logger.info("Benchmark of execution times finished!")
