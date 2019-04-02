@@ -1,8 +1,4 @@
-"""Class and methods for database connectivity.
-
-This module provides classes and methods for importing task-sets from the SQLite database
-and formatting data into a format usable with tensorflow.
-"""
+"""Class and methods for database connectivity."""
 
 import logging
 import operator
@@ -12,7 +8,7 @@ import sqlite3
 from benchmark import benchmark_execution_times
 
 
-class Task():
+class Task:
     """Representation of a task.
 
     Currently only the following attributes are integrated:
@@ -250,29 +246,23 @@ class Database:
     def read_table_job(self, set_id=None, task_id=None, exit_value=None):
         """Read the table Job.
 
-        This method reads the table Job of the database. If task_id is not specified, the hole table
-        is read. If task_id is specified, only the jobs of the task defined by task_id are read.
-        If exit_value is specified, only the jobs with this exit_value are read.
+        This method reads the table Job of the database. If set_id, task_id or exit_value is not specified, the hole
+        table is read. If set_id, task_id and exit_value is specified, only the jobs of the task defined by set_id and
+        task_id and with the exit value exit_value are read.
 
         Args:
+            set_id -- ID of the task-set of the task which jobs should be read
             task_id -- ID of the task which jobs should be read
             exit_value -- exit_value of the jobs that should be read
         Return:
             rows -- list with the job attributes
         """
-        # create logger
-        logger = logging.getLogger('traditional-SA.database_interface.read_table_job')
-
         self._open_db()  # open database
 
         if set_id is not None and task_id is not None and exit_value is not None:
             # read all jobs of set_id and task_id with exit_value
             self.db_cursor.execute("SELECT * FROM Job WHERE Set_ID = ? AND Task_ID = ? AND Exit_Value = ?",
                                    (set_id, task_id, exit_value))
-        elif task_id is not None and exit_value is not None:
-            # read all jobs of task_id with exit_value
-            self.db_cursor.execute("SELECT * FROM Job WHERE Task_ID = ? AND Exit_Value = ?",
-                                   (task_id, exit_value))
         else:  # read all jobs
             self.db_cursor.execute("SELECT * FROM Job")
 
@@ -313,19 +303,22 @@ class Database:
     def read_table_taskset(self, taskset_id=None, task_id=None, convert=True):
         """Read the table TaskSet.
 
-        This method reads the table TaskSet of the database.
+        This method reads the table TaskSet of the database. If taskset_id is specified, only the task-set of taskset_id
+        is read. If task_id is specified, only the task-sets where the task task_id is the only task are read. If
+        neither taskset_id nor task_id is specified, the hole table is read.
 
         Args:
             taskset_id -- ID of the task-set which should be read
+            task_id -- ID of the task which should be the only task in the task-set
             convert -- whether the task-sets should be converted to objects of type Taskset
         Return:
             dataset -- list with the task-sets
         """
         self._open_db()  # open database
 
-        if taskset_id is not None and task_id is None:  # read task-set with taskset_id
+        if taskset_id is not None:  # read task-set with taskset_id
             self.db_cursor.execute("SELECT * FROM TaskSet WHERE Set_ID = ?", (taskset_id,))
-        elif taskset_id is None and task_id is not None:  # read task-set where task_id is only task
+        elif task_id is not None:  # read task-set where task_id is only task
             self.db_cursor.execute(
                 "SELECT * FROM TaskSet WHERE TASK1_ID = ? AND TASK2_ID = ? AND TASK3_ID = ? AND TASK4_ID = ?",
                 (task_id, -1, -1, -1))
@@ -334,8 +327,6 @@ class Database:
 
         rows = self.db_cursor.fetchall()
         self._close_db()  # close database
-
-        rows = rows[:5]
 
         if convert:  # convert task-sets to objects of type Taskset
             dataset = self._convert_to_taskset(rows)
@@ -420,13 +411,13 @@ class Database:
         """
         task_dict = dict()  # create empty dictionary for tasks
 
+        execution_time_dict = self.read_table_executiontime()   # read table 'ExecutionTime'
+
         for row in task_attributes:  # iterate over all task attribute rows
-            # get execution time of task depending on PKG and Arg
-            task_id = row[0]
-            if task_id in self.execution_time_dict:
-                execution_time = self.execution_time_dict[task_id]
-            else:  # (PKG)
-                execution_time = 1
+            if row[0] not in execution_time_dict:  # no execution time for task found
+                raise ValueError("Could not find an execution time for task %d", row[0])
+
+            execution_time = execution_time_dict[row[0]] # get execution time of task
 
             # create new task
             new_task = Task(task_id=row[0], priority=row[1], pkg=row[5], arg=row[6],
