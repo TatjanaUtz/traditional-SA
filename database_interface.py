@@ -5,7 +5,7 @@ import operator
 import os
 import sqlite3
 
-from benchmark import benchmark_execution_times
+import benchmark
 
 
 class Task:
@@ -111,7 +111,6 @@ class Database:
     Additional attributes of a Database object are:
         db_connection -- connection to the database
         db_cursor -- cursor for working with the database
-        execution_time_dict -- dictionary with the execution times of the tasks
     """
 
     def __init__(self, db_dir, db_name):
@@ -121,16 +120,12 @@ class Database:
         self.db_name = db_name  # name of the database
         self.db_connection = None  # connection to the database
         self.db_cursor = None  # cursor for working with the database
-        self.execution_time_dict = None  # execution times of tasks
 
         # check that database exists
         self._check_if_database_exists()
 
         # check the database: check if all necessary tables exist
         self._check_database()
-
-        # read table 'ExecutionTime': update execution times
-        self.execution_time_dict = self.read_table_executiontime()
 
     #############################
     # check database and tables #
@@ -146,7 +141,7 @@ class Database:
 
         # check if database exists
         if not os.path.exists(db_path):  # database doesn't exists: raise exception
-            raise Exception("database '%s' not found in %s", self.db_name, self.db_dir)
+            raise Exception("database '%s' not found in %s" % (self.db_name, self.db_dir,))
 
     def _check_database(self):
         """Check the database.
@@ -162,24 +157,23 @@ class Database:
         """
         # check table Job
         if not self._check_if_table_exists('Job'):  # table Job does not exist
-            raise Exception("no such table: %s", 'Job')
+            raise Exception("no such table: %s" % ('Job',))
 
         # check table Task
         if not self._check_if_table_exists('Task'):  # table Task does not exist
-            raise Exception("no such table: %s", 'Task')
+            raise Exception("no such table: %s" % ('Task',))
 
         # check table TaskSet
         if not self._check_if_table_exists('TaskSet'):  # table TaskSet does not exist
-            raise Exception("no such table: %s", 'TaslSet')
+            raise Exception("no such table: %s" % ('TaskSet',))
 
         # check table ExecutionTime
         if not self._check_if_table_exists('ExecutionTime'):
             # table ExecutionTime does not exist: create it through benchmark
-            benchmark_execution_times(self)
-
+            benchmark.benchmark_execution_times(self)
             # check that table was successfully created
             if not self._check_if_table_exists('ExecutionTime'):  # something went wrong
-                raise Exception("nos such table %s - creation not possible", 'ExecutionTime')
+                raise Exception("no such table %s - creation not possible" % ('ExecutionTime',))
 
     def _check_if_table_exists(self, table_name):
         """Check if a table exists in the database.
@@ -243,26 +237,25 @@ class Database:
     # read / write tables #
     #######################
 
-    def read_table_job(self, set_id=None, task_id=None, exit_value=None):
+    def read_table_job(self, set_id=None, task_id=None):
         """Read the table Job.
 
-        This method reads the table Job of the database. If set_id, task_id or exit_value is not specified, the hole
-        table is read. If set_id, task_id and exit_value is specified, only the jobs of the task defined by set_id and
-        task_id and with the exit value exit_value are read.
+        This method reads the table Job of the database. If set_id or task_id is not specified, the
+        hole table is read. If set_id and task_id are specified, only the jobs of the task defined
+        by set_id and task_id are read.
 
         Args:
             set_id -- ID of the task-set of the task which jobs should be read
             task_id -- ID of the task which jobs should be read
-            exit_value -- exit_value of the jobs that should be read
         Return:
             rows -- list with the job attributes
         """
         self._open_db()  # open database
 
-        if set_id is not None and task_id is not None and exit_value is not None:
-            # read all jobs of set_id and task_id with exit_value
-            self.db_cursor.execute("SELECT * FROM Job WHERE Set_ID = ? AND Task_ID = ? AND Exit_Value = ?",
-                                   (set_id, task_id, exit_value))
+        if set_id is not None and task_id is not None:
+            # read all jobs of set_id and task_id
+            self.db_cursor.execute("SELECT * FROM Job WHERE Set_ID = ? AND Task_ID = ?",
+                                   (set_id, task_id))
         else:  # read all jobs
             self.db_cursor.execute("SELECT * FROM Job")
 
@@ -271,22 +264,25 @@ class Database:
 
         return rows
 
-    def read_table_task(self, task_id=None, dict=True):
+    def read_table_task(self, task_id=None, convert_to_task_dict=True):
         """Read the table Task.
 
         This method reads the table Task of the database. If task_id is not specified, the hole
-        table is read. If task_id is specified, only the task defined by task_id is read.
+        table is read. If task_id is specified, only the task defined by task_id is read. The
+        argument dict defines, if the task attributes are converted to a dictionary with
+            key = task ID
+            value = Task-object.
 
         Args:
             task_id -- ID of the task which should be read
-            dict -- whether the tasks should be returned as list or dictionary
+            convert_to_task_dict -- whether the tasks should be returned as list or dictionary
         Return:
             rows -- list with the task attributes
             task_dict -- dictionary of the task attributes (key = task ID, value = Task-object)
         """
         self._open_db()  # open database
 
-        if task_id is not None:  # read task with task_id
+        if task_id is not None:  # read task with ID task_id
             self.db_cursor.execute("SELECT * FROM Task WHERE Task_ID = ?", (task_id,))
         else:  # read all tasks
             self.db_cursor.execute("SELECT * FROM Task")
@@ -294,7 +290,7 @@ class Database:
         rows = self.db_cursor.fetchall()
         self._close_db()  # close database
 
-        if dict:  # convert task attributes to dictionary
+        if convert_to_task_dict:  # convert task attributes to dictionary
             task_dict = self._convert_to_task_dict(rows)
             return task_dict
 
@@ -303,9 +299,10 @@ class Database:
     def read_table_taskset(self, taskset_id=None, task_id=None, convert=True):
         """Read the table TaskSet.
 
-        This method reads the table TaskSet of the database. If taskset_id is specified, only the task-set of taskset_id
-        is read. If task_id is specified, only the task-sets where the task task_id is the only task are read. If
-        neither taskset_id nor task_id is specified, the hole table is read.
+        This method reads the table TaskSet of the database. If taskset_id is specified, only the
+        task-set of taskset_id is read. If task_id is specified, only the task-sets where the task
+        task_id is the only task are read. If neither taskset_id nor task_id is specified, the hole
+        table is read.
 
         Args:
             taskset_id -- ID of the task-set which should be read
@@ -319,9 +316,8 @@ class Database:
         if taskset_id is not None:  # read task-set with taskset_id
             self.db_cursor.execute("SELECT * FROM TaskSet WHERE Set_ID = ?", (taskset_id,))
         elif task_id is not None:  # read task-set where task_id is only task
-            self.db_cursor.execute(
-                "SELECT * FROM TaskSet WHERE TASK1_ID = ? AND TASK2_ID = ? AND TASK3_ID = ? AND TASK4_ID = ?",
-                (task_id, -1, -1, -1))
+            self.db_cursor.execute("SELECT * FROM TaskSet WHERE TASK1_ID = ? AND TASK2_ID = ? AND "
+                                   "TASK3_ID = ? AND TASK4_ID = ?", (task_id, -1, -1, -1))
         else:  # read all tasks-sets
             self.db_cursor.execute("SELECT * FROM TaskSet")
 
@@ -334,13 +330,13 @@ class Database:
 
         return rows
 
-    def read_table_executiontime(self, dict=True):
+    def read_table_executiontime(self, convert_to_dict=True):
         """Read the table ExecutionTime.
 
         This method reads the table ExecutionTime. The hole table is read, i.e. all rows.
 
         Args:
-            dict -- whether the execution times should be returned as list or dictionary
+            convert_to_dict -- whether the execution times should be returned as list or dictionary
 
         Return:
             execution_times -- list with the execution times
@@ -354,7 +350,7 @@ class Database:
         rows = self.db_cursor.fetchall()
         self._close_db()  # close database
 
-        if dict:  # convert execution times to dictionary
+        if convert_to_dict:  # convert execution times to dictionary
             c_dict = self._convert_to_executiontime_dict(rows)
             return c_dict
 
@@ -364,7 +360,8 @@ class Database:
         """Write the execution times to the database.
 
         Args:
-            task_dict -- dictionary with all task execution times (key = task_id, value = execution time)
+            task_dict -- dictionary with all task execution times (key = task_id, value = execution
+                         time)
         """
         # create logger
         logger = logging.getLogger('traditional-SA.database._write_execution_time')
@@ -411,13 +408,13 @@ class Database:
         """
         task_dict = dict()  # create empty dictionary for tasks
 
-        execution_time_dict = self.read_table_executiontime()   # read table 'ExecutionTime'
+        execution_time_dict = self.read_table_executiontime()  # read table 'ExecutionTime'
 
         for row in task_attributes:  # iterate over all task attribute rows
             if row[0] not in execution_time_dict:  # no execution time for task found
-                raise ValueError("Could not find an execution time for task %d", row[0])
+                raise ValueError("Could not find an execution time for task %d" % (row[0],))
 
-            execution_time = execution_time_dict[row[0]] # get execution time of task
+            execution_time = execution_time_dict[row[0]]  # get execution time of task
 
             # create new task
             new_task = Task(task_id=row[0], priority=row[1], pkg=row[5], arg=row[6],
@@ -440,7 +437,8 @@ class Database:
         Return:
             dataset -- list of Taskset objects
         """
-        # read table 'Task': get dictionary with task attributes (key = task ID, value = Task-object)
+        # read table 'Task': get dictionary with task attributes
+        # (key = task ID, value = Task-object)
         task_attributes = self.read_table_task()
 
         dataset = []  # create empty list
