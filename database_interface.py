@@ -11,44 +11,6 @@ import sqlite3
 
 from benchmark import benchmark_execution_times
 
-# default task execution times
-DEFAULT_EXECUTION_TIMES = {
-    ("hey", 0): 1045,
-    ("hey", 1000): 1094,
-    ("hey", 1000000): 1071,
-
-    ("pi", 100): 1574,
-    ("pi", 10000): 1693,
-    ("pi", 100000): 1870,
-
-    ("cond_42", 41): 1350,
-    ("cond_42", 42): 1376,
-    ("cond_42", 10041): 1413,
-    ("cond_42", 10042): 1432,
-    ("cond_42", 1000041): 1368,
-    ("cond_42", 1000042): 1396,
-
-    ("cond_mod", 100): 1323,
-    ("cond_mod", 103): 1351,
-    ("cond_mod", 10000): 1395,
-    ("cond_mod", 10003): 1391,
-    ("cond_mod", 1000000): 1342,
-    ("cond_mod", 1000003): 1391,
-
-    ("tumatmul", 10): 1511,
-    ("tumatmul", 11): 1543,
-    ("tumatmul", 10000): 1692,
-    ("tumatmul", 10001): 1662,
-    ("tumatmul", 1000000): 3009,
-    ("tumatmul", 1000001): 3121,
-
-    "hey": 1070,
-    "pi": 1712,
-    "cond_42": 1389,
-    "cond_mod": 1366,
-    "tumatmul": 2090
-}
-
 
 class Task():
     """Representation of a task.
@@ -163,9 +125,7 @@ class Database:
         self.db_name = db_name  # name of the database
         self.db_connection = None  # connection to the database
         self.db_cursor = None  # cursor for working with the database
-
-        # initalize execution times with default values
-        self.execution_time_dict = DEFAULT_EXECUTION_TIMES
+        self.execution_time_dict = None  # execution times of tasks
 
         # check that database exists
         self._check_if_database_exists()
@@ -287,7 +247,7 @@ class Database:
     # read / write tables #
     #######################
 
-    def read_table_job(self, task_id=None, exit_value=None):
+    def read_table_job(self, set_id=None, task_id=None, exit_value=None):
         """Read the table Job.
 
         This method reads the table Job of the database. If task_id is not specified, the hole table
@@ -305,7 +265,11 @@ class Database:
 
         self._open_db()  # open database
 
-        if task_id is not None and exit_value is not None:
+        if set_id is not None and task_id is not None and exit_value is not None:
+            # read all jobs of set_id and task_id with exit_value
+            self.db_cursor.execute("SELECT * FROM Job WHERE Set_ID = ? AND Task_ID = ? AND Exit_Value = ?",
+                                   (set_id, task_id, exit_value))
+        elif task_id is not None and exit_value is not None:
             # read all jobs of task_id with exit_value
             self.db_cursor.execute("SELECT * FROM Job WHERE Task_ID = ? AND Exit_Value = ?",
                                    (task_id, exit_value))
@@ -346,7 +310,7 @@ class Database:
 
         return rows
 
-    def read_table_taskset(self, taskset_id=None, convert=True):
+    def read_table_taskset(self, taskset_id=None, task_id=None, convert=True):
         """Read the table TaskSet.
 
         This method reads the table TaskSet of the database.
@@ -359,13 +323,19 @@ class Database:
         """
         self._open_db()  # open database
 
-        if taskset_id is not None:  # read task-set with taskset_id
+        if taskset_id is not None and task_id is None:  # read task-set with taskset_id
             self.db_cursor.execute("SELECT * FROM TaskSet WHERE Set_ID = ?", (taskset_id,))
+        elif taskset_id is None and task_id is not None:  # read task-set where task_id is only task
+            self.db_cursor.execute(
+                "SELECT * FROM TaskSet WHERE TASK1_ID = ? AND TASK2_ID = ? AND TASK3_ID = ? AND TASK4_ID = ?",
+                (task_id, -1, -1, -1))
         else:  # read all tasks-sets
             self.db_cursor.execute("SELECT * FROM TaskSet")
 
         rows = self.db_cursor.fetchall()
         self._close_db()  # close database
+
+        rows = rows[:5]
 
         if convert:  # convert task-sets to objects of type Taskset
             dataset = self._convert_to_taskset(rows)
@@ -383,7 +353,7 @@ class Database:
 
         Return:
             execution_times -- list with the execution times
-            c_dict -- dictionary of the execution times (key = PKG or (PKG, Arg), value = execution
+            c_dict -- dictionary of the execution times (key = TASK_ID, value = execution
                       time)
         """
         self._open_db()  # open database
@@ -403,7 +373,7 @@ class Database:
         """Write the execution times to the database.
 
         Args:
-            task_dict -- dictionary with all task execution times
+            task_dict -- dictionary with all task execution times (key = task_id, value = execution time)
         """
         # create logger
         logger = logging.getLogger('traditional-SA.database._write_execution_time')
@@ -412,9 +382,9 @@ class Database:
 
         # create table ExecutionTime if it does not exist
         create_table_sql = "CREATE TABLE IF NOT EXISTS ExecutionTime (" \
-                           "[PKG(Arg)] TEXT, " \
-                           "[Average_C] INTEGER, " \
-                           "PRIMARY KEY([PKG(Arg)])" \
+                           "TASK_ID INTEGER, " \
+                           "Average_C INTEGER, " \
+                           "PRIMARY KEY(TASK_ID)" \
                            ");"
         try:
             self.db_cursor.execute(create_table_sql)
@@ -423,16 +393,12 @@ class Database:
 
         # sql statement for inserting or replacing a row in the ExecutionTime table
         insert_or_replace_sql = "INSERT OR REPLACE INTO ExecutionTime" \
-                                "([PKG(Arg)], Average_C) VALUES(?, ?)"
+                                "(TASK_ID, Average_C) VALUES(?, ?)"
 
         # iterate over all keys
         for key in c_dict:
-            if isinstance(key, str):  # key = (PKG)
-                # insert or replace task-set
-                self.db_cursor.execute(insert_or_replace_sql, (key, c_dict[key]))
-            elif len(key) == 2:  # key = (PKG, Arg)
-                self.db_cursor.execute(insert_or_replace_sql,
-                                       (key[0] + "(" + str(key[1]) + ")", c_dict[key]))
+            # insert or replace task-set
+            self.db_cursor.execute(insert_or_replace_sql, (key, c_dict[key]))
 
         self._close_db()  # close database
 
@@ -456,12 +422,11 @@ class Database:
 
         for row in task_attributes:  # iterate over all task attribute rows
             # get execution time of task depending on PKG and Arg
-            pkg = row[5]
-            arg = row[6]
-            if (pkg, arg) in self.execution_time_dict:  # (PKG, Arg)
-                execution_time = self.execution_time_dict[(pkg, arg)]
+            task_id = row[0]
+            if task_id in self.execution_time_dict:
+                execution_time = self.execution_time_dict[task_id]
             else:  # (PKG)
-                execution_time = self.execution_time_dict[pkg]
+                execution_time = 1
 
             # create new task
             new_task = Task(task_id=row[0], priority=row[1], pkg=row[5], arg=row[6],
@@ -515,7 +480,7 @@ class Database:
         """Convert a list of execution times to a dictionary.
 
         This function converts a list of execution times to a dictionary with
-            key = PKG or (PKG, Arg)
+            key = task ID
             value = execution time.
 
         Args:
@@ -524,23 +489,9 @@ class Database:
             c_dict -- dictionary with execution times
         """
         # create dictionary with default execution times
-        c_dict = DEFAULT_EXECUTION_TIMES
+        c_dict = dict()
 
         for row in execution_times:  # iterate over all execution time rows
-            # extract identifier and execution time
-            pkg_arg = row[0]
-            average_c = row[1]
-
-            # split pkg and arg and create new dictionary entry
-            if '(' in pkg_arg:  # string contains pkg and arg
-                pkg, arg = pkg_arg.split('(')
-                arg = int(arg[:-1])  # delete last character = ')' and format to int
-                dict_entry = {(pkg, arg): average_c}
-            else:  # string contains only pkg, no arg
-                pkg = pkg_arg
-                dict_entry = {pkg: average_c}
-
-            # update dictionary
-            c_dict.update(dict_entry)
+            c_dict[row[0]] = row[1]
 
         return c_dict
