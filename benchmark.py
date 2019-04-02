@@ -18,7 +18,7 @@ def benchmark_execution_times(database):
     logger.info("Starting to benchmark execution times...")
     start_time = time.time()
 
-    task_list = database.read_table_task(dict=False)  # read table 'Task'
+    task_list = database.read_table_task(convert_to_task_dict=False)  # read table 'Task'
     c_dict = dict()  # create empty dictionary for execution times
 
     for task in task_list:  # iterate over all tasks
