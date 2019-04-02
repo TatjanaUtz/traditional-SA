@@ -6,9 +6,10 @@ import time
 def benchmark_execution_times(database):
     """Benchmark to get average execution times of tasks.
 
-    This method determines for each task the task-sets, that consist only of this task. Then all jobs of this
-    task-sets and for the task are read from the database. The execution time of the jobs is calculated from the start-
-    and end-date and the average value is built upon this execution times.
+    This method determines for each task the task-sets, that consist only of this task. Then all
+    jobs of this task-sets and for the task are read from the database. The execution time of the
+    jobs is calculated from the start- and end-date and the average value is built upon this
+    execution times.
 
     Args:
         database -- a Database-object
