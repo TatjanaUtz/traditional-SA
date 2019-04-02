@@ -440,8 +440,7 @@ class Database:
         Return:
             dataset -- list of Taskset objects
         """
-        # read table 'Task': get dictionary with task attributes
-        # (key = task ID, value = Task-object)
+        # read table 'Task': get dictionary with task attributes (key = task ID, value = Task-object)
         task_attributes = self.read_table_task()
 
         dataset = []  # create empty list

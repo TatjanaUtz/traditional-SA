@@ -2,8 +2,6 @@
 import logging
 import time
 
-import database_interface
-
 
 def benchmark_execution_times(database):
     """Benchmark to get average execution times of tasks.
@@ -44,7 +42,7 @@ def benchmark_execution_times(database):
 
     end_time = time.time()
     logger.info("Benchmark of execution times finished!")
-    logger.info("Time elapsed: %f", end_time - start_time)
+    logger.info("Time elapsed: %f s", end_time - start_time)
 
     # write execution times to the database
     logger.info("Saving calculated execution times to database...")
@@ -79,13 +77,3 @@ def _calculate_executiontimes(job_attributes):
             executiontimes.append(execution_time)  # append execution time to list
 
     return executiontimes
-
-
-if __name__ == "__main__":
-    # Configure logging: format should be "LEVELNAME: Message",
-    # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-
-    # create Database object - benchmark is started within constructor
-    database_interface.Database(db_dir="C:\\Users\\tatjana.utz\\PycharmProjects\\Datenbanken",
-                                db_name="panda_v3.db")

@@ -60,7 +60,7 @@ def load_dataset(db_dir, db_name):
     try:
         my_database = Database(db_dir=db_dir, db_name=db_name)
     except ValueError as val_err:
-        logger.error("Could not create Database-object: %s", format(val_err))
+        logger.error("Could not create Database-object: %s", val_err)
         return None
 
     # read the data-set from the database
