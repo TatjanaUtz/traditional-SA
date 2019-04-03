@@ -5,13 +5,14 @@ import os
 LOG_FILE_NAME = "traditional-SA_results"
 
 
-def init_logging(db_name):
+def init_logging(db_dir, db_name):
     """Initializes logging.
 
     Configures logging. Error messages are logged to the 'error.log' file. Info messages are logged
     to the console. The results are save in a 'result_' log file.
 
     Args:
+        db_dir -- directory of the database, used to create file for results
         db_name -- name of the database, used to create file name for results
     """
     # create logger for traditional-SA project
@@ -39,7 +40,7 @@ def init_logging(db_name):
     db_name = os.path.splitext(db_name)[0]  # remove file extension from the database name
     global LOG_FILE_NAME
     LOG_FILE_NAME = LOG_FILE_NAME + "_" + db_name + ".log"  # edit log file name
-    log_file = open(LOG_FILE_NAME, 'w+')  # create or clear file
+    log_file = open(os.path.join(db_dir, LOG_FILE_NAME), 'w+')  # create or clear file
     log_file.close()  # close file
 
     return logger
