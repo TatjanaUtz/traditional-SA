@@ -32,7 +32,7 @@ def main():
     db_dir, db_name, tests_todo = command_line_interface.read_input()
 
     # create and initialize logger
-    logger = logging_config.init_logging(db_name)
+    logger = logging_config.init_logging(db_dir, db_name)
 
     if tests_todo is not None:  # at least one test should be done
         logger.info("Tests to do: %s \n", [test.__name__ for test in tests_todo])

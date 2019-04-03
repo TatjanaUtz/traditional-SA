@@ -20,7 +20,7 @@ def init_logging(db_dir, db_name):
     logger.setLevel(logging.INFO)
 
     # create file handler which logs error messages
-    log_file_handler = logging.FileHandler('error.log', mode='w+')
+    log_file_handler = logging.FileHandler(os.path.join(db_dir, 'error.log'), mode='w+')
     log_file_handler.setLevel(logging.ERROR)
 
     # create console handler with a lower log level (e.g debug or info)
@@ -39,7 +39,7 @@ def init_logging(db_dir, db_name):
     # create log file for results
     db_name = os.path.splitext(db_name)[0]  # remove file extension from the database name
     global LOG_FILE_NAME
-    LOG_FILE_NAME = LOG_FILE_NAME + "_" + db_name + ".log"  # edit log file name
+    LOG_FILE_NAME = LOG_FILE_NAME + "_" + db_name + ".log"
     log_file = open(os.path.join(db_dir, LOG_FILE_NAME), 'w+')  # create or clear file
     log_file.close()  # close file
 
