@@ -285,7 +285,7 @@ class Database:
         if task_id is not None:  # read task with ID task_id
             self.db_cursor.execute("SELECT * FROM Task WHERE Task_ID = ?", (task_id,))
         else:  # read all tasks
-            self.db_cursor.execute("SELECT * FROM Task")
+            self.db_cursor.execute("SELECT * FROM Task ORDER BY TASK_ID ASC")
 
         rows = self.db_cursor.fetchall()
         self._close_db()  # close database
