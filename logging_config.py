@@ -2,7 +2,7 @@
 import logging
 import os
 
-LOG_FILE_NAME = "results.log"
+LOG_FILE_NAME = "traditional-SA_results"
 
 
 def init_logging(db_name):
@@ -38,7 +38,7 @@ def init_logging(db_name):
     # create log file for results
     db_name = os.path.splitext(db_name)[0]  # remove file extension from the database name
     global LOG_FILE_NAME
-    LOG_FILE_NAME = "results_" + db_name + ".log"  # edit log file name
+    LOG_FILE_NAME = LOG_FILE_NAME + "_" + db_name + ".log"  # edit log file name
     log_file = open(LOG_FILE_NAME, 'w+')  # create or clear file
     log_file.close()  # close file
 
