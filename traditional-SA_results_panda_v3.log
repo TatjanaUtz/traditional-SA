@@ -1,0 +1,112 @@
+
+---------- Results of simulate ----------
+True positive results (tp) = 1539991 = 75.05% 
+False positive results (fp) = 115206 = 5.61% 
+True negative results (tn) = 340766 = 16.61% 
+False negative results (fn) = 55915 = 2.73% 
+Total = 2051878 
+-----------------------------------------
+Accuracy = 91.66% 
+Precision = 93.04% 
+Recall = 96.50% 
+-----------------------------------------
+Time elapsed: 7715.559545s 
+-----------------------------------------
+
+---------- Results of basic_utilization_test ----------
+True positive results (tp) = 1577634 = 76.89% 
+False positive results (fp) = 290025 = 14.13% 
+True negative results (tn) = 165947 = 8.09% 
+False negative results (fn) = 18272 = 0.89% 
+Total = 2051878 
+-------------------------------------------------------
+Accuracy = 84.97% 
+Precision = 84.47% 
+Recall = 98.86% 
+-------------------------------------------------------
+Time elapsed: 6.985236s 
+-------------------------------------------------------
+
+---------- Results of rm_utilization_test ----------
+True positive results (tp) = 1543295 = 75.21% 
+False positive results (fp) = 223402 = 10.89% 
+True negative results (tn) = 232570 = 11.33% 
+False negative results (fn) = 52611 = 2.56% 
+Total = 2051878 
+----------------------------------------------------
+Accuracy = 86.55% 
+Precision = 87.35% 
+Recall = 96.70% 
+----------------------------------------------------
+Time elapsed: 8.641613s 
+----------------------------------------------------
+
+---------- Results of hb_utilization_test ----------
+True positive results (tp) = 1582226 = 77.11% 
+False positive results (fp) = 296262 = 14.44% 
+True negative results (tn) = 159710 = 7.78% 
+False negative results (fn) = 13680 = 0.67% 
+Total = 2051878 
+----------------------------------------------------
+Accuracy = 84.89% 
+Precision = 84.23% 
+Recall = 99.14% 
+----------------------------------------------------
+Time elapsed: 6.236385s 
+----------------------------------------------------
+
+---------- Results of rta_audsley ----------
+True positive results (tp) = 1533263 = 74.72% 
+False positive results (fp) = 81022 = 3.95% 
+True negative results (tn) = 374950 = 18.27% 
+False negative results (fn) = 62643 = 3.05% 
+Total = 2051878 
+--------------------------------------------
+Accuracy = 93.00% 
+Precision = 94.98% 
+Recall = 96.07% 
+--------------------------------------------
+Time elapsed: 84.424917s 
+--------------------------------------------
+
+---------- Results of rta_buttazzo ----------
+True positive results (tp) = 1533259 = 74.72% 
+False positive results (fp) = 80904 = 3.94% 
+True negative results (tn) = 375068 = 18.28% 
+False negative results (fn) = 62647 = 3.05% 
+Total = 2051878 
+---------------------------------------------
+Accuracy = 93.00% 
+Precision = 94.99% 
+Recall = 96.07% 
+---------------------------------------------
+Time elapsed: 82.887964s 
+---------------------------------------------
+
+---------- Results of rm_workload_test ----------
+True positive results (tp) = 1552528 = 75.66% 
+False positive results (fp) = 160544 = 7.82% 
+True negative results (tn) = 295428 = 14.40% 
+False negative results (fn) = 43378 = 2.11% 
+Total = 2051878 
+-------------------------------------------------
+Accuracy = 90.06% 
+Precision = 90.63% 
+Recall = 97.28% 
+-------------------------------------------------
+Time elapsed: 86.790624s 
+-------------------------------------------------
+
+---------- Results of het_workload_test ----------
+True positive results (tp) = 1506046 = 73.40% 
+False positive results (fp) = 109803 = 5.35% 
+True negative results (tn) = 346169 = 16.87% 
+False negative results (fn) = 89860 = 4.38% 
+Total = 2051878 
+--------------------------------------------------
+Accuracy = 90.27% 
+Precision = 93.20% 
+Recall = 94.37% 
+--------------------------------------------------
+Time elapsed: 81.827873s 
+--------------------------------------------------
