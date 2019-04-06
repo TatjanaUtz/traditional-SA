@@ -39,8 +39,9 @@ def init_logging(db_dir, db_name):
     # create log file for results
     db_name = os.path.splitext(db_name)[0]  # remove file extension from the database name
     global LOG_FILE_NAME
-    LOG_FILE_NAME = LOG_FILE_NAME + "_" + db_name + ".txt"
-    log_file = open(os.path.join(db_dir, LOG_FILE_NAME), 'w+')  # create or clear file
+    LOG_FILE_NAME = LOG_FILE_NAME + "_" + db_name + ".log"
+    LOG_FILE_NAME = os.path.join(db_dir, LOG_FILE_NAME)
+    log_file = open(LOG_FILE_NAME, 'w+')  # create or clear file
     log_file.close()  # close file
 
     return logger
