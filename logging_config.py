@@ -39,7 +39,7 @@ def init_logging(db_dir, db_name):
     # create log file for results
     db_name = os.path.splitext(db_name)[0]  # remove file extension from the database name
     global LOG_FILE_NAME
-    LOG_FILE_NAME = LOG_FILE_NAME + "_" + db_name + ".log"
+    LOG_FILE_NAME = LOG_FILE_NAME + "_" + db_name + ".txt"
     log_file = open(os.path.join(db_dir, LOG_FILE_NAME), 'w+')  # create or clear file
     log_file.close()  # close file
 
@@ -80,26 +80,26 @@ def log_results(test_name, results):
     results['recall'] = results['tp'] / (results['tp'] + results['fn'])  # calculate recall
 
     # log results to the result log file
-    log_file = open(LOG_FILE_NAME, 'a+')
-    log_file.write("\n")
-    result_title_string = "---------- Results of " + test_name + " ----------"
-    log_file.write(result_title_string + "\n")
-    log_file.write("True positive results (tp) = {0:d} = {1:.2f}% \n"
-                   .format(results['tp'], results['tp'] / sum_results * 100))
-    log_file.write("False positive results (fp) = {0:d} = {1:.2f}% \n"
-                   .format(results['fp'], results['fp'] / sum_results * 100))
-    log_file.write("True negative results (tn) = {0:d} = {1:.2f}% \n"
-                   .format(results['tn'], results['tn'] / sum_results * 100))
-    log_file.write("False negative results (fn) = {0:d} = {1:.2f}% \n"
-                   .format(results['fn'], results['fn'] / sum_results * 100))
-    log_file.write("Total = {0:d} \n".format(sum_results))
-    log_file.write("-" * len(result_title_string) + "\n")
-    log_file.write("Accuracy = {0:.2f}% \n".format(results['accuracy'] * 100))
-    log_file.write("Precision = {0:.2f}% \n".format(results['precision'] * 100))
-    log_file.write("Recall = {0:.2f}% \n".format(results['recall'] * 100))
-    log_file.write("-" * len(result_title_string) + "\n")
-    log_file.write("Time elapsed: {0:f}s \n".format(results['time']))
-    log_file.write("-" * len(result_title_string) + "\n")
+    with open(LOG_FILE_NAME, 'a+') as log_file:
+        log_file.write("\n")
+        result_title_string = "---------- Results of " + test_name + " ----------"
+        log_file.write(result_title_string + "\n")
+        log_file.write("True positive results (tp) = {0:d} = {1:.2f}% \n"
+                       .format(results['tp'], results['tp'] / sum_results * 100))
+        log_file.write("False positive results (fp) = {0:d} = {1:.2f}% \n"
+                       .format(results['fp'], results['fp'] / sum_results * 100))
+        log_file.write("True negative results (tn) = {0:d} = {1:.2f}% \n"
+                       .format(results['tn'], results['tn'] / sum_results * 100))
+        log_file.write("False negative results (fn) = {0:d} = {1:.2f}% \n"
+                       .format(results['fn'], results['fn'] / sum_results * 100))
+        log_file.write("Total = {0:d} \n".format(sum_results))
+        log_file.write("-" * len(result_title_string) + "\n")
+        log_file.write("Accuracy = {0:.2f}% \n".format(results['accuracy'] * 100))
+        log_file.write("Precision = {0:.2f}% \n".format(results['precision'] * 100))
+        log_file.write("Recall = {0:.2f}% \n".format(results['recall'] * 100))
+        log_file.write("-" * len(result_title_string) + "\n")
+        log_file.write("Time elapsed: {0:f}s \n".format(results['time']))
+        log_file.write("-" * len(result_title_string) + "\n")
 
     # log results to the console
     result_title_string = "---------- Results of " + test_name + " ----------"
