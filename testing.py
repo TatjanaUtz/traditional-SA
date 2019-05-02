@@ -18,13 +18,13 @@ def test_schedulability_test():
 
     taskset_46429 = my_database.read_table_taskset(taskset_id=46429)[0]
     start_t = time.time()
-    result = simulate(taskset_46429)
+    result = het_workload_test(taskset_46429)
     end_t = time.time()
     print("Time elapsed: %f s" %(end_t - start_t))
 
     taskset_563782 = my_database.read_table_taskset(taskset_id=563782)[0]
     start_t = time.time()
-    result = simulate(taskset_563782)
+    result = het_workload_test(taskset_563782)
     end_t = time.time()
     print("Time elapsed: %f s" %(end_t - start_t))
 
