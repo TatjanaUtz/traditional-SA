@@ -44,7 +44,7 @@ def time_per_taskset():
     for taskset in dataset: # iterate over all task-sets
         # do schedulability analysis
         start_t = time.time()
-        simulate(taskset)
+        het_workload_test(taskset)
         end_t = time.time()
 
         # add time
@@ -52,13 +52,13 @@ def time_per_taskset():
 
     # calculate average time
     average_t = sum(times) / len(times)
-    print("SIMULATION -- Average time per task-set: %f s" %(average_t))
+    print("HET -- Average time per task-set: %f s" %(average_t))
 
 
 
 if __name__ == "__main__":
     # Configure logging: format should be "LEVELNAME: Message",
     # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
     time_per_taskset()
