@@ -18,13 +18,13 @@ def test_schedulability_test():
 
     taskset_46429 = my_database.read_table_taskset(taskset_id=46429)[0]
     start_t = time.time()
-    result = het_workload_test(taskset_46429)
+    result = rm_workload_test(taskset_46429)
     end_t = time.time()
     print("Time elapsed: %f s" %(end_t - start_t))
 
     taskset_563782 = my_database.read_table_taskset(taskset_id=563782)[0]
     start_t = time.time()
-    result = het_workload_test(taskset_563782)
+    result = simulate(taskset_563782)
     end_t = time.time()
     print("Time elapsed: %f s" %(end_t - start_t))
 
@@ -44,7 +44,7 @@ def time_per_taskset():
     for taskset in dataset: # iterate over all task-sets
         # do schedulability analysis
         start_t = time.time()
-        het_workload_test(taskset)
+        simulate(taskset)
         end_t = time.time()
 
         # add time
@@ -52,13 +52,14 @@ def time_per_taskset():
 
     # calculate average time
     average_t = sum(times) / len(times)
-    print("HET -- Average time per task-set: %f s" %(average_t))
+    print("SIMULATION -- Average time per task-set: %f s" %(average_t))
 
 
 
 if __name__ == "__main__":
     # Configure logging: format should be "LEVELNAME: Message",
     # logging level should be DEBUG (all messages are shown)
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-    time_per_taskset()
+    #start_simso()
+    test_schedulability_test()
