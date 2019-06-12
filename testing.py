@@ -1,14 +1,14 @@
 """Module for different testing scenarios."""
 import logging
+import os
 
 import simsogui
-import os
 import time
 
 from database_interface import Database
+from rta import rta_audsley, rta_buttazzo
 from simulation import simulate
 from utilization import basic_utilization_test, rm_utilization_test, hb_utilization_test
-from rta import rta_audsley, rta_buttazzo
 from workload import rm_workload_test, het_workload_test
 
 
@@ -17,21 +17,60 @@ def test_schedulability_test():
     my_database = Database(os.getcwd(), "panda_v3.db")
 
     taskset_46429 = my_database.read_table_taskset(taskset_id=46429)[0]
-    start_t = time.time()
-    result = rm_workload_test(taskset_46429)
-    end_t = time.time()
-    print("Time elapsed: %f s" %(end_t - start_t))
 
-    taskset_563782 = my_database.read_table_taskset(taskset_id=563782)[0]
+    print("----- Simulation -----")
     start_t = time.time()
-    result = simulate(taskset_563782)
+    result = simulate(taskset_46429)
     end_t = time.time()
-    print("Time elapsed: %f s" %(end_t - start_t))
+    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+
+    print("----- Basic Utilization -----")
+    start_t = time.time()
+    result = basic_utilization_test(taskset_46429)
+    end_t = time.time()
+    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+
+    print("----- RM Utilization -----")
+    start_t = time.time()
+    result = rm_utilization_test()
+    end_t = time.time()
+    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+
+    print("----- HB Utilization -----")
+    start_t = time.time()
+    result = hb_utilization_test(taskset_46429)
+    end_t = time.time()
+    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+
+    print("----- RTA Audsley -----")
+    start_t = time.time()
+    result = rta_audsley(taskset_46429)
+    end_t = time.time()
+    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+
+    print("----- RTA Buttazzo -----")
+    start_t = time.time()
+    result = rta_buttazzo(taskset_46429)
+    end_t = time.time()
+    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+
+    print("----- RM Workload -----")
+    start_t = time.time()
+    result = rm_workload_test()
+    end_t = time.time()
+    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+
+    print("----- HET Workload -----")
+    start_t = time.time()
+    result = het_workload_test(taskset_46429)
+    end_t = time.time()
+    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
 
 
 def start_simso():
     """Start SimSo GUI."""
     simsogui.run_gui()
+
 
 def time_per_taskset():
     # load the dataset
@@ -41,7 +80,7 @@ def time_per_taskset():
     # create empty list for times
     times = []
 
-    for taskset in dataset: # iterate over all task-sets
+    for taskset in dataset:  # iterate over all task-sets
         # do schedulability analysis
         start_t = time.time()
         simulate(taskset)
@@ -52,8 +91,7 @@ def time_per_taskset():
 
     # calculate average time
     average_t = sum(times) / len(times)
-    print("SIMULATION -- Average time per task-set: %f s" %(average_t))
-
+    print("SIMULATION -- Average time per task-set: %f s" % (average_t))
 
 
 if __name__ == "__main__":
@@ -61,5 +99,5 @@ if __name__ == "__main__":
     # logging level should be DEBUG (all messages are shown)
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
-    #start_simso()
+    # start_simso()
     test_schedulability_test()
