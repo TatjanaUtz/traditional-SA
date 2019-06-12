@@ -320,7 +320,7 @@ class Database:
             self.db_cursor.execute("SELECT * FROM TaskSet WHERE TASK1_ID = ? AND TASK2_ID = ? AND "
                                    "TASK3_ID = ? AND TASK4_ID = ?", (task_id, -1, -1, -1))
         else:  # read all tasks-sets
-            self.db_cursor.execute("SELECT * FROM TaskSet LIMIT 500,510")
+            self.db_cursor.execute("SELECT * FROM TaskSet")
 
         rows = self.db_cursor.fetchall()
         self._close_db()  # close database
