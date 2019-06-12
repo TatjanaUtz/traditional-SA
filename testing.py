@@ -32,7 +32,7 @@ def test_schedulability_test():
 
     print("----- RM Utilization -----")
     start_t = time.time()
-    result = rm_utilization_test()
+    result = rm_utilization_test(taskset_46429)
     end_t = time.time()
     print("Result: %r -- Time elapsed: %f s" % (result, end_t - start_t))
 
@@ -56,7 +56,7 @@ def test_schedulability_test():
 
     print("----- RM Workload -----")
     start_t = time.time()
-    result = rm_workload_test()
+    result = rm_workload_test(taskset_46429)
     end_t = time.time()
     print("Result: %r -- Time elapsed: %f s" % (result, end_t - start_t))
 
