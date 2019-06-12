@@ -22,49 +22,49 @@ def test_schedulability_test():
     start_t = time.time()
     result = simulate(taskset_46429)
     end_t = time.time()
-    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+    print("Result: %r -- Time elapsed: %f s" % (result, end_t - start_t))
 
     print("----- Basic Utilization -----")
     start_t = time.time()
     result = basic_utilization_test(taskset_46429)
     end_t = time.time()
-    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+    print("Result: %r -- Time elapsed: %f s" % (result, end_t - start_t))
 
     print("----- RM Utilization -----")
     start_t = time.time()
     result = rm_utilization_test()
     end_t = time.time()
-    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+    print("Result: %r -- Time elapsed: %f s" % (result, end_t - start_t))
 
     print("----- HB Utilization -----")
     start_t = time.time()
     result = hb_utilization_test(taskset_46429)
     end_t = time.time()
-    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+    print("Result: %r -- Time elapsed: %f s" % (result, end_t - start_t))
 
     print("----- RTA Audsley -----")
     start_t = time.time()
     result = rta_audsley(taskset_46429)
     end_t = time.time()
-    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+    print("Result: %r -- Time elapsed: %f s" % (result, end_t - start_t))
 
     print("----- RTA Buttazzo -----")
     start_t = time.time()
     result = rta_buttazzo(taskset_46429)
     end_t = time.time()
-    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+    print("Result: %r -- Time elapsed: %f s" % (result, end_t - start_t))
 
     print("----- RM Workload -----")
     start_t = time.time()
     result = rm_workload_test()
     end_t = time.time()
-    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+    print("Result: %r -- Time elapsed: %f s" % (result, end_t - start_t))
 
     print("----- HET Workload -----")
     start_t = time.time()
     result = het_workload_test(taskset_46429)
     end_t = time.time()
-    print("Result: %r -- Time elapsed: %f s" % (end_t - start_t))
+    print("Result: %r -- Time elapsed: %f s" % (result, end_t - start_t))
 
 
 def start_simso():
