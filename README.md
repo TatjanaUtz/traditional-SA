@@ -64,7 +64,7 @@ cd /vagrant
 ``` 
 to the project directory. Then you can start the schedulability analysis by
 ```bash
-python 3.6 main.py "db_dir" --test_all
+python3.6 main.py "db_dir" --test_all
 ``` 
 where *db_dir* is the absolute path to the database file and *--test_all* are 
 the schedulability analysis methods to perform. There are the following possibilities for the last 
