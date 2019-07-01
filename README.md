@@ -50,7 +50,7 @@ Period, Number_of_Jobs, OFFSET
 - Job: Set_ID, Task_ID, Job_ID, Start_Date, End_Date, Exit_Value
 
 # Installation and Start
-Download or clone the hole project. Change to the project directory and type  
+Download or clone the hole project. Add the database as described above to the project directory. Change to the project directory and type  
 ```bash
 vagrant up
 ```
@@ -66,9 +66,8 @@ to the project directory. Then you can start the schedulability analysis by
 ```bash
 python 3.6 main.py "db_dir" --test_all
 ``` 
-where *db_dir* is the absolute path to the database file as described above and *--test_all* are 
-the 
-schedulability analysis methods to perform. There are the following possibilities for the last 
+where *db_dir* is the absolute path to the database file and *--test_all* are 
+the schedulability analysis methods to perform. There are the following possibilities for the last 
 argument:  
 
 Argument | Description  
