@@ -101,3 +101,6 @@ if __name__ == "__main__":
 
     # start_simso()
     test_schedulability_test()
+
+    # start SimSo GUI
+    start_simso()
